@@ -5,6 +5,8 @@ from twisted.plugin import IPlugin
 from twisted.application.service import IServiceMaker
 from twisted.python import log
 
+from txgsm.txgsm import TxGSMService
+
 
 class Options(usage.Options):
     optParameters = [
@@ -22,6 +24,6 @@ class TxGSMMaker(object):
     def makeService(self, options):
         device = options['device']
         log.msg('Using device: %r' % (device,))
-        return
+        return TxGSMService(device)
 
 serviceMaker = TxGSMMaker()

@@ -36,3 +36,4 @@ nosetests.xml
 /ve/
 *.cache
 _trial_temp
+*.log
