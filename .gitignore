@@ -35,3 +35,4 @@ nosetests.xml
 .pydevproject
 /ve/
 *.cache
+_trial_temp
