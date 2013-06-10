@@ -1,25 +1,27 @@
 # -*- test-case-name: txgsm.tests.test_txgsm -*-
-from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.serialport import SerialPort
+from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 from twisted.application.service import Service
 from twisted.python import log
 
 
-class TxGSMProtocol(Protocol):
+class TxGSMProtocol(LineReceiver):
+
     def connectionMade(self):
         log.msg('Connection made')
-        self.transport.write('AT+CUSD=1,"*120*8864#"\r\n')
+        self.sendLine('AT+CGMI')
+        self.sendLine('AT+CGMM')
+        self.sendLine('AT+CGSN')
+        self.sendLine('AT+CGMR')
+        self.sendLine('AT+CNUM')
+        self.sendLine('AT+CIMI')
 
-    def dataReceived(self, data):
-        log.msg('Received data: %r' % (data,))
+    def lineReceived(self, line):
+        log.msg('Received line: %r' % (line,))
 
     def connectionLost(self, reason):
         log.msg('Connection lost: %r' % (reason,))
-
-
-class TxGSMFactory(Factory):
-    protocol = TxGSMProtocol
 
 
 class TxGSMService(Service):
