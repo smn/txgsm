@@ -42,7 +42,7 @@ Supports multipart & unicode.
     2013-06-15 11:21:04+0200 [-] Server Shut Down.
     $
 
-Interaction with a USSD Service
+Interacting with a USSD Service
 -------------------------------
 
 ::
