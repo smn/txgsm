@@ -49,6 +49,7 @@ class TxGSMProtocol(LineReceiver):
         d.addCallback(self.next('AT+CMEE=1'))  # More useful errors
         d.addCallback(self.next('AT+WIND=0'))  # Don't send unsollicited events
         d.addCallback(self.next('AT+CSMS=1'))  # set SMS mode to phase 2+
+        d.addCallback(self.next('AT+CSQ'))
         return d
 
     def sendSMS(self, msisdn, text):

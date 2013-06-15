@@ -9,7 +9,7 @@ from twisted.internet import reactor, stdio
 from twisted.python import log
 
 from txgsm.txgsm import TxGSMService
-from txgsm.utils import Console
+from txgsm.utils import USSDConsole
 
 
 class SendSMS(usage.Options):
@@ -71,39 +71,14 @@ class TxGSMMaker(object):
 
     @inlineCallbacks
     def ussd_session(self, modem, options):
-
-        def parse_cusd_resp(resp):
-            for item in resp:
-                if not item.startswith('+CUSD'):
-                    continue
-                ussd_resp = item.lstrip('+CUSD: ')
-                operation, content, dcs = ussd_resp.split(',')
-                return operation, content
-
-        @inlineCallbacks
-        def input(console, line):
-            resp = yield modem.sendCommand('AT+CUSD=1,"%s",15' % (line,),
-                                           expect='+CUSD')
-
-            operation, content = parse_cusd_resp(resp)
-            console.sendLine(content)
-            if operation == '1':
-                console.prompt()
-            else:
-                reactor.stop()
-
         yield modem.configureModem()
-
-        resp = yield modem.sendCommand('AT+CUSD=1,"%s",15' % options['code'],
-                                       expect='+CUSD')
-
-        console = Console(on_input=input, prefix='ussd')
+        console = USSDConsole(modem, on_exit=self.shutdown)
         stdio.StandardIO(console)
-        operation, content = parse_cusd_resp(resp)
-        if operation == '1':
-            console.sendLine(content)
-            console.prompt()
-        else:
-            reactor.stop()
+        yield console.dial(options['code'])
+
+    def shutdown(self, resp):
+        log.msg('Shutting down with: %r' % (resp,))
+        reactor.callLater(2, reactor.stop)
+
 
 serviceMaker = TxGSMMaker()
