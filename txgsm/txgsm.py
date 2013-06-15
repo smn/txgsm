@@ -1,7 +1,7 @@
 # -*- test-case-name: txgsm.tests.test_txgsm -*-
 from twisted.internet.serialport import SerialPort
-from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
+from twisted.protocols.basic import LineReceiver
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.application.service import Service
 from twisted.python import log
@@ -12,53 +12,81 @@ from messaging.sms import SmsSubmit
 class TxGSMProtocol(LineReceiver):
 
     CTRL_Z = '\x1a'
+    delimiter = '\r\n'
 
     def __init__(self):
+        # AT switches between '\r' and '\r\n' a bit so
+        # using lineReceived() does not always work.
+        self.setRawMode()
         self.deferreds = []
-        self.buffer = []
+        self.buffer = b''
 
     @inlineCallbacks
     def connectionMade(self):
         log.msg('Connection made')
         r = yield self.configureProtocol()
-        print 'r', r
-        r = yield self.sendSMS('+27764493806', 'hello world')
-        print 'r'
+        r = yield self.sendSMS('+27YOURPHONENUMBERHERE',
+            ('1' * 160) + ('2' * 2))
 
-    def sendCommand(self, command, expect='OK'):
-        log.msg('Sending: %s' % (command,))
+    def sendCommand(self, command, expect='OK', delimiter=None):
+        log.msg('Sending: %r' % (command,))
         resp = Deferred()
+        resp.addCallback(self.debug)
         self.deferreds.append((expect, resp))
-        self.sendLine(command)
+        dl = delimiter or self.delimiter
+        self.transport.write(command + dl)
         return resp
 
     def debug(self, resp):
-        log.msg('resp: %s' % (resp,))
+        log.msg('Received: %r' % (resp,))
         return resp
+
+    def next(self, command, expect='OK', delimiter=None):
+        def handler(result):
+            return self.sendCommand(command, expect)
+        return handler
 
     def configureProtocol(self):
         d = self.sendCommand('AT+CMGF=0')  # PDU mode
-        d.addCallback(self.debug)
+        d.addCallback(self.next('ATE0'))
         return d
 
-    @inlineCallbacks
     def sendSMS(self, msisdn, text):
         sms = SmsSubmit(msisdn, text)
+        # NOTE: The use of the Deferred here is a bit wonky
+        #       I'm using it like this because it makes adding callbacks
+        #       in a for-loop easier since we're potentially sending
+        #       SMSs bigger than 160 chars.
+        d = Deferred()
         for pdu in sms.to_pdu():
-            yield self.sendCommand('AT+CMGS=%d\r' % (pdu.length,),
-                                   expect='> ')
-            yield self.sendCommand('%s%s' % (pdu.pdu, self.CTRL_Z))
+            d.addCallback(self.next(
+                'AT+CMGS=%d' % (pdu.length,),
+                expect='> ',
+                delimiter='\r'))
+            d.addCallback(self.next('%s%s' % (pdu.pdu, self.CTRL_Z)))
 
-    def lineReceived(self, line):
-        log.msg('Received line: %r' % (line,))
-        self.buffer.append(line)
-        print self.buffer
+        d.callback(None)
+        return d
+
+    def rawDataReceived(self, data):
+        self.buffer += data
         expect, deferred = self.deferreds[0]
-        if line == expect:
-            print 'got expected!', expect
+
+        if expect in self.buffer:
             expect, deferred = self.deferreds.pop(0)
-            return_buffer, self.buffer = self.buffer, []
-            deferred.callback(return_buffer)
+            return_buffer, self.buffer = self.buffer, b''
+            if return_buffer.endswith(self.delimiter):
+                value = self.parseResponse(return_buffer)
+            else:
+                value = self.parseOutput(return_buffer)
+
+            deferred.callback(value)
+
+    def parseResponse(self, output):
+        return filter(None, output.split(self.delimiter))
+
+    def parseOutput(self, output):
+        return filter(None, output.split(self.delimiter))
 
     def connectionLost(self, reason):
         log.msg('Connection lost: %r' % (reason,))
