@@ -1,4 +1,5 @@
 # -*- test-case-name: txgsm.tests.test_txgsm -*-
+# -*- coding: utf-8 -*-
 from twisted.internet.serialport import SerialPort
 from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
@@ -21,12 +22,8 @@ class TxGSMProtocol(LineReceiver):
         self.deferreds = []
         self.buffer = b''
 
-    @inlineCallbacks
     def connectionMade(self):
         log.msg('Connection made')
-        r = yield self.configureProtocol()
-        r = yield self.sendSMS('+27YOURPHONENUMBERHERE',
-            ('1' * 160) + ('2' * 2))
 
     def sendCommand(self, command, expect='OK', delimiter=None):
         log.msg('Sending: %r' % (command,))
@@ -46,9 +43,12 @@ class TxGSMProtocol(LineReceiver):
             return self.sendCommand(command, expect)
         return handler
 
-    def configureProtocol(self):
+    def configureModem(self):
         d = self.sendCommand('AT+CMGF=0')  # PDU mode
-        d.addCallback(self.next('ATE0'))
+        d.addCallback(self.next('ATE0'))  # Disable echo
+        d.addCallback(self.next('AT+CMEE=1'))  # More useful errors
+        d.addCallback(self.next('AT+WIND=0'))  # Don't send unsollicited events
+        d.addCallback(self.next('AT+CSMS=1'))  # set SMS mode to phase 2+
         return d
 
     def sendSMS(self, msisdn, text):
@@ -70,6 +70,11 @@ class TxGSMProtocol(LineReceiver):
 
     def rawDataReceived(self, data):
         self.buffer += data
+
+        if not self.deferreds:
+            log.msg('Unsollicited response: %r' % (data,))
+            return
+
         expect, deferred = self.deferreds[0]
 
         if expect in self.buffer:
@@ -88,9 +93,6 @@ class TxGSMProtocol(LineReceiver):
     def parseOutput(self, output):
         return filter(None, output.split(self.delimiter))
 
-    def connectionLost(self, reason):
-        log.msg('Connection lost: %r' % (reason,))
-
 
 class TxGSMService(Service):
 
@@ -99,7 +101,14 @@ class TxGSMService(Service):
     def __init__(self, device, **conn_options):
         self.device = device
         self.conn_options = conn_options
+        self.onProtocol = Deferred()
+        self.onProtocol.addErrback(log.err)
 
     def startService(self):
-        self.port = SerialPort(self.protocol(), self.device, reactor,
+        p = self.protocol()
+        self.port = SerialPort(p, self.device, reactor,
                                **self.conn_options)
+        self.onProtocol.callback(p)
+
+    def stopService(self):
+        self.port.loseConnection()
