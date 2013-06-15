@@ -1,3 +1,4 @@
+import sys
 from zope.interface import implements
 
 from twisted.python import usage
@@ -18,10 +19,18 @@ class SendSMS(usage.Options):
     ]
 
 
+class USSDSession(usage.Options):
+
+    optParameters = [
+        ['code', None, None, "The USSD code to dial"],
+    ]
+
+
 class Options(usage.Options):
 
     subCommands = [
         ['send-sms', None, SendSMS, "Send an SMS"],
+        ['ussd-session', None, USSDSession, 'Start a USSD session']
     ]
 
     optParameters = [
@@ -40,16 +49,31 @@ class TxGSMMaker(object):
         device = options['device']
         log.msg('Using device: %r' % (device,))
         service = TxGSMService(device)
-        if options.subCommand == 'send-sms':
-            service.onProtocol.addCallback(self.send_sms,
-                                           options.subOptions)
-        return service
+
+        dispatch = {
+            'send-sms': self.send_sms,
+            'ussd-session': self.ussd_session,
+        }
+
+        callback = dispatch.get(options.subCommand)
+        if callback:
+            service.onProtocol.addCallback(callback, options.subOptions)
+            return service
+        else:
+            sys.exit(str(options))
 
     @inlineCallbacks
     def send_sms(self, modem, options):
         yield modem.configureModem()
         yield modem.sendSMS(options['to-addr'], options['message'])
         reactor.stop()
+
+    @inlineCallbacks
+    def ussd_session(self, modem, options):
+        yield modem.configureModem()
+        r = yield modem.sendCommand('AT+CUSD=1,"%s",15' % options['code'])
+        print 'r', r
+
 
 
 serviceMaker = TxGSMMaker()
