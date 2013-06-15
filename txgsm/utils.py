@@ -48,7 +48,9 @@ class USSDConsole(Console):
                 continue
 
             ussd_resp = item.lstrip('+CUSD: ')
-            operation, content, dcs = ussd_resp.split(',')
+            operation = ussd_resp[0]
+            content = ussd_resp[3:-4]
+            dcs = ussd_resp[-2:]
             return int(operation), content
 
     def on_input(self, line):
@@ -59,7 +61,7 @@ class USSDConsole(Console):
 
     def handle_response(self, resp):
         operation, content = self.parse_ussd_response(resp)
-        self.sendLine(content[1:-1])  # strip quotes
+        self.sendLine(content)
         if operation == self.FURTHER_ACTION:
             self.prompt()
         else:
