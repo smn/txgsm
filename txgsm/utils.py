@@ -59,7 +59,7 @@ class USSDConsole(Console):
 
     def handle_response(self, resp):
         operation, content = self.parse_ussd_response(resp)
-        self.sendLine(content)
+        self.sendLine(content[1:-1])  # strip quotes
         if operation == self.FURTHER_ACTION:
             self.prompt()
         else:

@@ -14,6 +14,7 @@ class TxGSMProtocol(LineReceiver):
 
     CTRL_Z = '\x1a'
     delimiter = '\r\n'
+    verbose = False
 
     def __init__(self):
         # AT switches between '\r' and '\r\n' a bit so
@@ -22,11 +23,15 @@ class TxGSMProtocol(LineReceiver):
         self.deferreds = []
         self.buffer = b''
 
+    def log(self, msg):
+        if self.verbose:
+            log.msg(msg)
+
     def connectionMade(self):
-        log.msg('Connection made')
+        self.log('Connection made')
 
     def sendCommand(self, command, expect='OK', delimiter=None):
-        log.msg('Sending: %r' % (command,))
+        self.log('Sending: %r' % (command,))
         resp = Deferred()
         resp.addCallback(self.debug)
         self.deferreds.append((expect, resp))
@@ -35,7 +40,7 @@ class TxGSMProtocol(LineReceiver):
         return resp
 
     def debug(self, resp):
-        log.msg('Received: %r' % (resp,))
+        self.log('Received: %r' % (resp,))
         return resp
 
     def next(self, command, expect='OK', delimiter=None):
@@ -73,7 +78,7 @@ class TxGSMProtocol(LineReceiver):
         self.buffer += data
 
         if not self.deferreds:
-            log.msg('Unsollicited response: %r' % (data,))
+            log.err('Unsollicited response: %r' % (data,))
             return
 
         expect, deferred = self.deferreds[0]

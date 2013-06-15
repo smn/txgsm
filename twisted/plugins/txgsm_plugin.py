@@ -22,6 +22,10 @@ class SendSMS(usage.Options):
 
 class USSDSession(usage.Options):
 
+    optFlags = [
+        ["verbose", "v", "Log AT commands"],
+    ]
+
     optParameters = [
         ['code', None, None, "The USSD code to dial"],
     ]
@@ -48,7 +52,6 @@ class TxGSMMaker(object):
 
     def makeService(self, options):
         device = options['device']
-        log.msg('Using device: %r' % (device,))
         service = TxGSMService(device)
 
         dispatch = {
@@ -71,13 +74,16 @@ class TxGSMMaker(object):
 
     @inlineCallbacks
     def ussd_session(self, modem, options):
+        log.msg('Connecting to modem.')
+        modem.verbose = options['verbose']
         yield modem.configureModem()
+        log.msg('Connected, starting console for: %s' % (options['code'],))
         console = USSDConsole(modem, on_exit=self.shutdown)
         stdio.StandardIO(console)
+        log.msg('Dialing: %s' % (options['code'],))
         yield console.dial(options['code'])
 
     def shutdown(self, resp):
-        log.msg('Shutting down with: %r' % (resp,))
         reactor.callLater(2, reactor.stop)
 
 
