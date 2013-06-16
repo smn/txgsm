@@ -23,10 +23,6 @@ class Console(LineReceiver):
         return self.on_input(line)
 
 
-class ConsoleException(Exception):
-    pass
-
-
 class USSDConsole(Console):
 
     NO_FURTHER_ACTION = 0
@@ -55,7 +51,6 @@ class USSDConsole(Console):
             operation = ussd_resp[0]
             content = ussd_resp[3:-4]
             return int(operation), content
-        raise ConsoleException('No USSD response found', resp)
 
     def on_input(self, line):
         d = self.modem.sendCommand('AT+CUSD=1,"%s",15' % (quote(line),),
