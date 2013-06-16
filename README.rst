@@ -4,6 +4,11 @@ txgsm
 Utilities for talking to a GSM modem over USB via AT commands.
 Will NOT work with all modems, YMMV.
 
+|txgsm|_
+
+.. |txgsm| image:: https://travis-ci.org/smn/txgsm.png?branch=develop
+.. _txgsm: https://travis-ci.org/smn/txgsm
+
 ::
 
     $ virtualenv ve
