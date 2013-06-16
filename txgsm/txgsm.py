@@ -90,18 +90,8 @@ class TxGSMProtocol(LineReceiver):
         if expect in self.buffer:
             expect, deferred = self.deferreds.pop(0)
             return_buffer, self.buffer = self.buffer, b''
-            if return_buffer.endswith(self.delimiter):
-                value = self.parseResponse(return_buffer)
-            else:
-                value = self.parseOutput(return_buffer)
-
-            deferred.callback(value)
-
-    def parseResponse(self, output):
-        return filter(None, output.split(self.delimiter))
-
-    def parseOutput(self, output):
-        return filter(None, output.split(self.delimiter))
+            deferred.callback(filter(None,
+                                     return_buffer.split(self.delimiter)))
 
 
 class TxGSMService(Service):
