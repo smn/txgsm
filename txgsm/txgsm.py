@@ -32,7 +32,7 @@ class TxGSMProtocol(LineReceiver):
     def connectionMade(self):
         self.log('Connection made')
 
-    def sendCommand(self, command, expect='OK'):
+    def send_command(self, command, expect='OK'):
         self.log('Sending: %r' % (command,))
         resp = Deferred()
         resp.addCallback(self.debug)
@@ -46,11 +46,11 @@ class TxGSMProtocol(LineReceiver):
 
     def next(self, command, expect='OK'):
         def handler(result):
-            return self.sendCommand(command, expect)
+            return self.send_command(command, expect)
         return handler
 
     def configureModem(self):
-        d = self.sendCommand('AT+CMGF=0')  # PDU mode
+        d = self.send_command('AT+CMGF=0')  # PDU mode
         d.addCallback(self.next('ATE0'))  # Disable echo
         d.addCallback(self.next('AT+CMEE=1'))  # More useful errors
         d.addCallback(self.next('AT+WIND=0'))  # Don't send unsollicited events
@@ -58,7 +58,7 @@ class TxGSMProtocol(LineReceiver):
         d.addCallback(self.next('AT+CSQ'))
         return d
 
-    def sendSMS(self, msisdn, text):
+    def send_sms(self, msisdn, text):
         sms = SmsSubmit(msisdn, text)
         # NOTE: The use of the Deferred here is a bit wonky
         #       I'm using it like this because it makes adding callbacks
@@ -74,8 +74,8 @@ class TxGSMProtocol(LineReceiver):
         d.callback(None)
         return d
 
-    def dialUSSDCode(self, code):
-        return self.sendCommand('AT+CUSD=1,"%s",15' % (quote(code),),
+    def dial_ussd_code(self, code):
+        return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
                                 expect='+CUSD')
 
     def rawDataReceived(self, data):

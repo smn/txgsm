@@ -25,7 +25,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
 
     @inlineCallbacks
     def test_send_sms(self):
-        d = self.modem.sendSMS('+27761234567', 'hello world')
+        d = self.modem.send_sms('+27761234567', 'hello world')
         self.assertCommands(['AT+CMGS=23'])
         self.reply('> ', delimiter='')
         [pdu_payload] = self.get_next_commands()
@@ -35,7 +35,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
 
     @inlineCallbacks
     def test_send_multipart_sms(self):
-        d = self.modem.sendSMS('+27761234567', '1' * 180)
+        d = self.modem.send_sms('+27761234567', '1' * 180)
         self.assertCommands(['AT+CMGS=153'])
         self.reply('> ', delimiter='')
         [pdu_payload] = self.get_next_commands()
@@ -49,7 +49,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
 
     @inlineCallbacks
     def test_ussd_session(self):
-        d = self.modem.dialUSSDCode('*100#')
+        d = self.modem.dial_ussd_code('*100#')
         self.assertExchange(
             input=['AT+CUSD=1,"*100#",15'],
             output=[

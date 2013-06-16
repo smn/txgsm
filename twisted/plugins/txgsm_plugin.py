@@ -69,7 +69,7 @@ class TxGSMMaker(object):
     @inlineCallbacks
     def send_sms(self, modem, options):
         yield modem.configureModem()
-        yield modem.sendSMS(options['to-addr'], options['message'])
+        yield modem.send_sms(options['to-addr'], options['message'])
         reactor.stop()
 
     @inlineCallbacks

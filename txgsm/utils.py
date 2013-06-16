@@ -38,7 +38,7 @@ class USSDConsole(Console):
         self.on_exit = on_exit
 
     def dial(self, number):
-        d = self.modem.dialUSSDCode(number)
+        d = self.modem.dial_ussd_code(number)
         d.addCallback(self.handle_response)
         return d
 
@@ -53,8 +53,8 @@ class USSDConsole(Console):
             return int(operation), content
 
     def on_input(self, line):
-        d = self.modem.sendCommand('AT+CUSD=1,"%s",15' % (quote(line),),
-                                   expect="+CUSD")
+        d = self.modem.send_command('AT+CUSD=1,"%s",15' % (quote(line),),
+                                    expect="+CUSD")
         d.addCallback(self.handle_response)
         return d
 
