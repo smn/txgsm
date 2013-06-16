@@ -4,10 +4,7 @@ txgsm
 Utilities for talking to a GSM modem over USB via AT commands.
 Will NOT work with all modems, YMMV.
 
-|txgsm|_
-
-.. |txgsm| image:: https://travis-ci.org/smn/txgsm.png?branch=develop
-.. _txgsm: https://travis-ci.org/smn/txgsm
+|travis|_ |coveralls|_
 
 ::
 
@@ -88,3 +85,11 @@ Adding ``-v`` or ``--verbose`` to see the AT commands.
     (Full content sent by SMS.)
     2013-06-15 19:38:24+0200 [-] Main loop terminated.
     2013-06-15 19:38:24+0200 [-] Server Shut Down.
+
+
+.. |travis| image:: https://travis-ci.org/smn/txgsm.png?branch=develop
+.. _travis: https://travis-ci.org/smn/txgsm
+
+.. |coveralls| image:: https://coveralls.io/repos/smn/txgsm/badge.png?branch=develop
+.. _coveralls: https://coveralls.io/r/smn/txgsm
+
