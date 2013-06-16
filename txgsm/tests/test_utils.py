@@ -1,22 +1,19 @@
-from twisted.trial.unittest import TestCase
-from twisted.internet.defer import inlineCallbacks
 from twisted.test import proto_helpers
 
 from txgsm.tests.base import TxGSMBaseTestCase
 from txgsm.utils import USSDConsole
+
+from mock import Mock
 
 
 class USSDConsoleTestCase(TxGSMBaseTestCase):
 
     def setUp(self):
         super(USSDConsoleTestCase, self).setUp()
-        self.console = USSDConsole(self.modem, on_exit=self.on_exit)
+        self.exit = Mock()
+        self.console = USSDConsole(self.modem, on_exit=self.exit)
         self.console_transport = proto_helpers.StringTransport()
         self.console.makeConnection(self.console_transport)
-        self._exit_called = False
-
-    def on_exit(self, *args, **kwargs):
-        self._exit_called = True
 
     def test_dial_single_screen_session(self):
         d = self.console.dial('*100#')
@@ -48,5 +45,5 @@ class USSDConsoleTestCase(TxGSMBaseTestCase):
                 '+CUSD: 2,"thanks!",25'
             ])
         self.assertEqual(self.console_transport.value(), 'thanks!\n')
-        self.assertTrue(self._exit_called)
+        self.assertTrue(self.exit.called)
         return d

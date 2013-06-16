@@ -1,6 +1,10 @@
 from twisted.internet.defer import inlineCallbacks
+from twisted.trial.unittest import TestCase
 
 from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
+from txgsm.txgsm import TxGSMService, TxGSMProtocol
+
+from mock import Mock
 
 
 class TxGSMTestCase(TxGSMBaseTestCase):
@@ -63,3 +67,30 @@ class TxGSMTestCase(TxGSMBaseTestCase):
             [err_log] = catcher.logs
             self.assertTrue('Unsollicited response' in err_log['message'][0])
             self.assertTrue('+FOO' in err_log['message'][0])
+
+
+class TxGSMServiceTestCase(TestCase):
+
+    def setUp(self):
+        self.mock_serial = Mock()
+        self.service = TxGSMService('/dev/foo', bar='baz')
+        self.service.serial_port_class = self.mock_serial
+
+    @inlineCallbacks
+    def test_start_service(self):
+        d = self.service.onProtocol
+        self.service.startService()
+        protocol = yield d
+        self.assertTrue(isinstance(protocol, TxGSMProtocol))
+        self.assertTrue(self.mock_serial.called)
+        [init_call] = self.mock_serial.call_args_list
+        args, kwargs = init_call
+        proto, device, reactor = args
+        self.assertEqual(device, '/dev/foo')
+        self.assertEqual(kwargs, {'bar': 'baz'})
+
+    def test_stop_service(self):
+        self.service.startService()
+        self.service.port.loseConnection = Mock()
+        self.service.stopService()
+        self.assertTrue(self.service.port.loseConnection.called)

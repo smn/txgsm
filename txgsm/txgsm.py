@@ -97,6 +97,7 @@ class TxGSMProtocol(LineReceiver):
 class TxGSMService(Service):
 
     protocol = TxGSMProtocol
+    serial_port_class = SerialPort
 
     def __init__(self, device, **conn_options):
         self.device = device
@@ -106,8 +107,8 @@ class TxGSMService(Service):
 
     def startService(self):
         p = self.protocol()
-        self.port = SerialPort(p, self.device, reactor,
-                               **self.conn_options)
+        self.port = self.serial_port_class(p, self.device, reactor,
+                                           **self.conn_options)
         self.onProtocol.callback(p)
 
     def stopService(self):
