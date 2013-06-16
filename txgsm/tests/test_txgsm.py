@@ -15,7 +15,8 @@ class TxGSMTextCase(TestCase):
         self.protocol.makeConnection(self.transport)
 
     def reply(self, data, delimiter=None):
-        self.protocol.dataReceived(data)
+        dl = delimiter or self.protocol.delimiter
+        self.protocol.dataReceived(data + dl)
 
     def get_next_commands(self, clear=True):
         commands = self.transport.value().split(self.protocol.delimiter)
@@ -26,19 +27,20 @@ class TxGSMTextCase(TestCase):
     def assertCommands(self, commands):
         self.assertEqual(commands, self.get_next_commands())
 
-    def expectExchange(self, command, reply):
-        self.assertCommands([command])
-        self.reply(reply)
+    def expectExchange(self, input, output):
+        self.assertCommands(input)
+        for reply in output:
+            self.reply(reply)
 
     @inlineCallbacks
     def test_configure_modem(self):
         d = self.protocol.configureModem()
-        self.expectExchange('AT+CMGF=0', 'OK')
-        self.expectExchange('ATE0', 'OK')
-        self.expectExchange('AT+CMEE=1', 'OK')
-        self.expectExchange('AT+WIND=0', 'OK')
-        self.expectExchange('AT+CSMS=1', 'OK')
-        self.expectExchange('AT+CSQ', 'OK')
+        self.expectExchange(['AT+CMGF=0'], ['OK'])
+        self.expectExchange(['ATE0'], ['OK'])
+        self.expectExchange(['AT+CMEE=1'], ['OK'])
+        self.expectExchange(['AT+WIND=0'], ['OK'])
+        self.expectExchange(['AT+CSMS=1'], ['OK'])
+        self.expectExchange(['AT+CSQ'], ['OK'])
         response = yield d
         self.assertEqual(response, ['OK'])
 
@@ -65,3 +67,18 @@ class TxGSMTextCase(TestCase):
         self.reply('OK')
         response = yield d
         self.assertEqual(response, ['OK'])
+
+    @inlineCallbacks
+    def test_ussd_session(self):
+        d = self.protocol.dialUSSDCode('*100#')
+        self.expectExchange(
+            input=['AT+CUSD=1,"*100#",15'],
+            output=[
+                'OK',
+                ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
+                 'Dial *111# for Airtime Advance. T&Cs apply.",255')
+            ])
+        response = yield d
+        self.assertEqual(response[0], 'OK')
+        self.assertTrue(response[1].startswith('+CUSD: 2'))
+

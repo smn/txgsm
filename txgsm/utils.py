@@ -21,6 +21,10 @@ class Console(LineReceiver):
         return self.on_input(line)
 
 
+class ConsoleException(Exception):
+    pass
+
+
 class USSDConsole(Console):
 
     NO_FURTHER_ACTION = 0
@@ -36,8 +40,7 @@ class USSDConsole(Console):
         self.on_exit = on_exit
 
     def dial(self, number):
-        d = self.modem.sendCommand('AT+CUSD=1,"%s",15' % (quote(number),),
-                                   expect='+CUSD')
+        d = self.modem.dialUSSDCode(number)
         d.addCallback(self.handle_response)
         return d
 
@@ -49,8 +52,8 @@ class USSDConsole(Console):
             ussd_resp = item.lstrip('+CUSD: ')
             operation = ussd_resp[0]
             content = ussd_resp[3:-4]
-            dcs = ussd_resp[-2:]
             return int(operation), content
+        raise ConsoleException('No USSD response found', resp)
 
     def on_input(self, line):
         d = self.modem.sendCommand('AT+CUSD=1,"%s",15' % (quote(line),),

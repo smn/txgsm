@@ -3,9 +3,11 @@
 from twisted.internet.serialport import SerialPort
 from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from twisted.application.service import Service
 from twisted.python import log
+
+from .utils import quote
 
 from messaging.sms import SmsSubmit
 
@@ -71,6 +73,10 @@ class TxGSMProtocol(LineReceiver):
 
         d.callback(None)
         return d
+
+    def dialUSSDCode(self, code):
+        return self.sendCommand('AT+CUSD=1,"%s",15' % (quote(code),),
+                                expect='+CUSD')
 
     def rawDataReceived(self, data):
         self.buffer += data
