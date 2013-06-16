@@ -6,6 +6,6 @@ install:
     - pip install coveralls --use-mirrors
     - pip install -r requirements.pip --use-mirrors
 script:
-    - coverage run --source=txgsm trial txgsm
+    - coverage run --source=txgsm ~/virtualenv/python$TRAVIS_PYTHON_VERSION/bin/trial txgsm
 after_success:
     - coveralls
