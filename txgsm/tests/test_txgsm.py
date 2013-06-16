@@ -7,6 +7,8 @@ from txgsm.txgsm import TxGSMProtocol
 
 class TxGSMTextCase(TestCase):
 
+    timeout = 1
+
     def setUp(self):
         self.protocol = TxGSMProtocol()
         self.transport = proto_helpers.StringTransport()
@@ -44,6 +46,20 @@ class TxGSMTextCase(TestCase):
     def test_send_sms(self):
         d = self.protocol.sendSMS('+27761234567', 'hello world')
         self.assertCommands(['AT+CMGS=23'])
+        self.reply('> ', delimiter='')
+        [pdu_payload] = self.get_next_commands()
+        self.reply('OK')
+        response = yield d
+        self.assertEqual(response, ['OK'])
+
+    @inlineCallbacks
+    def test_send_multipart_sms(self):
+        d = self.protocol.sendSMS('+27761234567', '1' * 180)
+        self.assertCommands(['AT+CMGS=153'])
+        self.reply('> ', delimiter='')
+        [pdu_payload] = self.get_next_commands()
+        self.reply('OK')
+        self.assertCommands(['AT+CMGS=43'])
         self.reply('> ', delimiter='')
         [pdu_payload] = self.get_next_commands()
         self.reply('OK')
