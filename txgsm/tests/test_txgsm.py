@@ -13,7 +13,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
 
     @inlineCallbacks
     def test_configure_modem(self):
-        d = self.modem.configureModem()
+        d = self.modem.configure_modem()
         self.assertExchange(['AT+CMGF=0'], ['OK'])
         self.assertExchange(['ATE0'], ['OK'])
         self.assertExchange(['AT+CMEE=1'], ['OK'])

@@ -49,7 +49,7 @@ class TxGSMProtocol(LineReceiver):
             return self.send_command(command, expect)
         return handler
 
-    def configureModem(self):
+    def configure_modem(self):
         d = self.send_command('AT+CMGF=0')  # PDU mode
         d.addCallback(self.next('ATE0'))  # Disable echo
         d.addCallback(self.next('AT+CMEE=1'))  # More useful errors

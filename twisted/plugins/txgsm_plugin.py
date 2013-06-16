@@ -68,7 +68,7 @@ class TxGSMMaker(object):
 
     @inlineCallbacks
     def send_sms(self, modem, options):
-        yield modem.configureModem()
+        yield modem.configure_modem()
         yield modem.send_sms(options['to-addr'], options['message'])
         reactor.stop()
 
@@ -76,7 +76,7 @@ class TxGSMMaker(object):
     def ussd_session(self, modem, options):
         log.msg('Connecting to modem.')
         modem.verbose = options['verbose']
-        yield modem.configureModem()
+        yield modem.configure_modem()
         log.msg('Connected, starting console for: %s' % (options['code'],))
         console = USSDConsole(modem, on_exit=self.shutdown)
         stdio.StandardIO(console)
