@@ -1,52 +1,27 @@
-from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
-from twisted.test import proto_helpers
 
-from txgsm.txgsm import TxGSMProtocol
+from txgsm.tests.base import TxGSMBaseTestCase
 
 
-class TxGSMTextCase(TestCase):
+class TxGSMTestCase(TxGSMBaseTestCase):
 
     timeout = 1
 
-    def setUp(self):
-        self.protocol = TxGSMProtocol()
-        self.transport = proto_helpers.StringTransport()
-        self.protocol.makeConnection(self.transport)
-
-    def reply(self, data, delimiter=None):
-        dl = delimiter or self.protocol.delimiter
-        self.protocol.dataReceived(data + dl)
-
-    def get_next_commands(self, clear=True):
-        commands = self.transport.value().split(self.protocol.delimiter)
-        if clear:
-            self.transport.clear()
-        return filter(None, commands)
-
-    def assertCommands(self, commands):
-        self.assertEqual(commands, self.get_next_commands())
-
-    def expectExchange(self, input, output):
-        self.assertCommands(input)
-        for reply in output:
-            self.reply(reply)
-
     @inlineCallbacks
     def test_configure_modem(self):
-        d = self.protocol.configureModem()
-        self.expectExchange(['AT+CMGF=0'], ['OK'])
-        self.expectExchange(['ATE0'], ['OK'])
-        self.expectExchange(['AT+CMEE=1'], ['OK'])
-        self.expectExchange(['AT+WIND=0'], ['OK'])
-        self.expectExchange(['AT+CSMS=1'], ['OK'])
-        self.expectExchange(['AT+CSQ'], ['OK'])
+        d = self.modem.configureModem()
+        self.assertExchange(['AT+CMGF=0'], ['OK'])
+        self.assertExchange(['ATE0'], ['OK'])
+        self.assertExchange(['AT+CMEE=1'], ['OK'])
+        self.assertExchange(['AT+WIND=0'], ['OK'])
+        self.assertExchange(['AT+CSMS=1'], ['OK'])
+        self.assertExchange(['AT+CSQ'], ['OK'])
         response = yield d
         self.assertEqual(response, ['OK'])
 
     @inlineCallbacks
     def test_send_sms(self):
-        d = self.protocol.sendSMS('+27761234567', 'hello world')
+        d = self.modem.sendSMS('+27761234567', 'hello world')
         self.assertCommands(['AT+CMGS=23'])
         self.reply('> ', delimiter='')
         [pdu_payload] = self.get_next_commands()
@@ -56,7 +31,7 @@ class TxGSMTextCase(TestCase):
 
     @inlineCallbacks
     def test_send_multipart_sms(self):
-        d = self.protocol.sendSMS('+27761234567', '1' * 180)
+        d = self.modem.sendSMS('+27761234567', '1' * 180)
         self.assertCommands(['AT+CMGS=153'])
         self.reply('> ', delimiter='')
         [pdu_payload] = self.get_next_commands()
@@ -70,8 +45,8 @@ class TxGSMTextCase(TestCase):
 
     @inlineCallbacks
     def test_ussd_session(self):
-        d = self.protocol.dialUSSDCode('*100#')
-        self.expectExchange(
+        d = self.modem.dialUSSDCode('*100#')
+        self.assertExchange(
             input=['AT+CUSD=1,"*100#",15'],
             output=[
                 'OK',
@@ -81,4 +56,3 @@ class TxGSMTextCase(TestCase):
         response = yield d
         self.assertEqual(response[0], 'OK')
         self.assertTrue(response[1].startswith('+CUSD: 2'))
-

@@ -1,3 +1,5 @@
+# -*- test-case-name: txgsm.tests.test_utils -*-
+
 from twisted.protocols.basic import LineReceiver
 
 from os import linesep
