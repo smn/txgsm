@@ -8,6 +8,7 @@ class TxGSMBaseTestCase(TestCase):
 
     def setUp(self):
         self.modem = TxGSMProtocol()
+        self.modem.verbose = True
         self.modem_transport = proto_helpers.StringTransport()
         self.modem.makeConnection(self.modem_transport)
 
