@@ -1,6 +1,6 @@
 from twisted.internet.defer import inlineCallbacks
 
-from txgsm.tests.base import TxGSMBaseTestCase
+from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
 
 
 class TxGSMTestCase(TxGSMBaseTestCase):
@@ -56,3 +56,10 @@ class TxGSMTestCase(TxGSMBaseTestCase):
         response = yield d
         self.assertEqual(response[0], 'OK')
         self.assertTrue(response[1].startswith('+CUSD: 2'))
+
+    def test_dealing_with_unexpected_events(self):
+        with LogCatcher() as catcher:
+            self.reply('+FOO')
+            [err_log] = catcher.logs
+            self.assertTrue('Unsollicited response' in err_log['message'][0])
+            self.assertTrue('+FOO' in err_log['message'][0])

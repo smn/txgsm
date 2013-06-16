@@ -1,7 +1,8 @@
 from twisted.trial.unittest import TestCase
+from twisted.test import proto_helpers
+from twisted.python import log
 
 from txgsm.txgsm import TxGSMProtocol
-from twisted.test import proto_helpers
 
 
 class TxGSMBaseTestCase(TestCase):
@@ -29,3 +30,18 @@ class TxGSMBaseTestCase(TestCase):
         self.assertCommands(input)
         for reply in output:
             self.reply(reply)
+
+
+# Shamelessly copyied from @Hodgestar's contribution to
+# https://github.com/praekelt/vumi/
+class LogCatcher(object):
+
+    def __init__(self):
+        self.logs = []
+
+    def __enter__(self):
+        log.theLogPublisher.addObserver(self.logs.append)
+        return self
+
+    def __exit__(self, *exc_info):
+        log.theLogPublisher.removeObserver(self.logs.append)
