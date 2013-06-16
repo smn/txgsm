@@ -9,17 +9,16 @@ class TxGSMTextCase(TestCase):
 
     def setUp(self):
         self.protocol = TxGSMProtocol()
-        self.protocol.verbose = True
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
-        self._command_index = 0
 
     def reply(self, data, delimiter=None):
         self.protocol.dataReceived(data)
 
-    def get_next_commands(self):
+    def get_next_commands(self, clear=True):
         commands = self.transport.value().split(self.protocol.delimiter)
-        self.transport.clear()
+        if clear:
+            self.transport.clear()
         return filter(None, commands)
 
     def assertCommands(self, commands):
