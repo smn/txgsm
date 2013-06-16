@@ -37,3 +37,4 @@ nosetests.xml
 *.cache
 _trial_temp
 *.log
+*.pid

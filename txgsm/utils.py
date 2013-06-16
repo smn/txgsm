@@ -1,5 +1,4 @@
 from twisted.protocols.basic import LineReceiver
-from twisted.internet.defer import inlineCallbacks
 
 from os import linesep
 
