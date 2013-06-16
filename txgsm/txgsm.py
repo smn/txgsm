@@ -30,20 +30,19 @@ class TxGSMProtocol(LineReceiver):
     def connectionMade(self):
         self.log('Connection made')
 
-    def sendCommand(self, command, expect='OK', delimiter=None):
+    def sendCommand(self, command, expect='OK'):
         self.log('Sending: %r' % (command,))
         resp = Deferred()
         resp.addCallback(self.debug)
         self.deferreds.append((expect, resp))
-        dl = delimiter or self.delimiter
-        self.transport.write(command + dl)
+        self.sendLine(command)
         return resp
 
     def debug(self, resp):
         self.log('Received: %r' % (resp,))
         return resp
 
-    def next(self, command, expect='OK', delimiter=None):
+    def next(self, command, expect='OK'):
         def handler(result):
             return self.sendCommand(command, expect)
         return handler
@@ -67,8 +66,7 @@ class TxGSMProtocol(LineReceiver):
         for pdu in sms.to_pdu():
             d.addCallback(self.next(
                 'AT+CMGS=%d' % (pdu.length,),
-                expect='> ',
-                delimiter='\r'))
+                expect='> '))
             d.addCallback(self.next('%s%s' % (pdu.pdu, self.CTRL_Z)))
 
         d.callback(None)
