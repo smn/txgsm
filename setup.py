@@ -49,7 +49,6 @@ setup(
     ],
     package_data={
         'twisted.plugins': ['twisted/plugins/txgsm_plugin.py'],
-        'txgsm.etc': ['txgsm/etc/*']
     },
     include_package_data=True,
     install_requires=install_requires,
