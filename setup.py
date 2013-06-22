@@ -1,16 +1,37 @@
 from setuptools import setup
 
+import re
 
-def requirements(filename):
+
+def listify(filename):
     return filter(None, open(filename, 'r').read().split('\n'))
 
 
-def install_requires(filename):
-    return [r for r in requirements(filename) if not r.startswith('http')]
+_SIMPLE_VERSION_RE = re.compile("(?P<name>.*)-(?P<version>[0-9.]+|dev)$")
 
 
-def dependency_links(filename):
-    return [r for r in requirements(filename) if r.startswith('http')]
+def parse_requirements(filename):
+    install_requires = []
+    dependency_links = []
+    for requirement in listify(filename):
+        if requirement.startswith("#"):
+            continue
+        if requirement.startswith("-e"):
+            continue
+        if requirement.startswith("https:") or requirement.startswith("http:"):
+            (_, _, name) = requirement.partition('#egg=')
+            ver_match = _SIMPLE_VERSION_RE.match(name)
+            if ver_match:
+                # egg names with versions need to be converted to
+                # an == requirement.
+                name = "%(name)s==%(version)s" % ver_match.groupdict()
+            install_requires.append(name)
+            dependency_links.append(requirement)
+        else:
+            install_requires.append(requirement)
+    return install_requires, dependency_links
+
+install_requires, dependency_links = parse_requirements("requirements.pip")
 
 setup(
     name="txgsm",
@@ -31,10 +52,10 @@ setup(
         'txgsm.etc': ['txgsm/etc/*']
     },
     include_package_data=True,
-    install_requires=install_requires('requirements.pip'),
-    dependency_links=dependency_links('requirements.pip'),
+    install_requires=install_requires,
+    dependency_links=dependency_links,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',

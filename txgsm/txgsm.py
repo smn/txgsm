@@ -50,12 +50,11 @@ class TxGSMProtocol(LineReceiver):
         return handler
 
     def configure_modem(self):
-        d = self.send_command('AT+CMGF=0')  # PDU mode
-        d.addCallback(self.next('ATE0'))  # Disable echo
+        # Sensible defaults shamelessly copied from pygsm.
+        d = self.send_command('AT+CMGF=0')     # PDU mode
+        d.addCallback(self.next('ATE0'))       # Disable echo
         d.addCallback(self.next('AT+CMEE=1'))  # More useful errors
-        d.addCallback(self.next('AT+WIND=0'))  # Don't send unsollicited events
         d.addCallback(self.next('AT+CSMS=1'))  # set SMS mode to phase 2+
-        d.addCallback(self.next('AT+CSQ'))
         return d
 
     def send_sms(self, msisdn, text):
@@ -76,7 +75,7 @@ class TxGSMProtocol(LineReceiver):
 
     def dial_ussd_code(self, code):
         return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
-                                expect='+CUSD')
+                                 expect='+CUSD')
 
     def rawDataReceived(self, data):
         self.buffer += data
