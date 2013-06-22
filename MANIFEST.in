@@ -1,0 +1,5 @@
+include README.rst
+include requirements.pip
+include twisted/plugins/txgsm_plugin.py
+recursive-include txgsm *.py
+graft twisted
