@@ -17,9 +17,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
         self.assertExchange(['AT+CMGF=0'], ['OK'])
         self.assertExchange(['ATE0'], ['OK'])
         self.assertExchange(['AT+CMEE=1'], ['OK'])
-        self.assertExchange(['AT+WIND=0'], ['OK'])
         self.assertExchange(['AT+CSMS=1'], ['OK'])
-        self.assertExchange(['AT+CSQ'], ['OK'])
         response = yield d
         self.assertEqual(response, ['OK'])
 
