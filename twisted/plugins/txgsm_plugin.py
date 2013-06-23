@@ -22,20 +22,26 @@ class SendSMS(usage.Options):
 
 class USSDSession(usage.Options):
 
-    optFlags = [
-        ["verbose", "v", "Log AT commands"],
-    ]
-
     optParameters = [
         ['code', None, None, "The USSD code to dial"],
     ]
+
+
+class ProbeModem(usage.Options):
+    pass
 
 
 class Options(usage.Options):
 
     subCommands = [
         ['send-sms', None, SendSMS, "Send an SMS"],
-        ['ussd-session', None, USSDSession, 'Start a USSD session']
+        ['ussd-session', None, USSDSession, 'Start a USSD session'],
+        ['probe-modem', None, ProbeModem,
+            'Probe the device to see if it is something modem-ish'],
+    ]
+
+    optFlags = [
+        ["verbose", "v", "Log AT commands"],
     ]
 
     optParameters = [
@@ -53,35 +59,50 @@ class TxGSMMaker(object):
     def makeService(self, options):
         device = options['device']
         service = TxGSMService(device)
+        service.onProtocol.addCallback(self.set_verbosity, options)
 
         dispatch = {
             'send-sms': self.send_sms,
             'ussd-session': self.ussd_session,
+            'probe-modem': self.probe_modem,
         }
 
         callback = dispatch.get(options.subCommand)
         if callback:
-            service.onProtocol.addCallback(callback, options.subOptions)
+            service.onProtocol.addCallback(callback, options)
             return service
         else:
             sys.exit(str(options))
 
+    def set_verbosity(self, modem, options):
+        modem.verbose = options['verbose']
+        return modem
+
     @inlineCallbacks
     def send_sms(self, modem, options):
+        cmd_options = options.subOptions
         yield modem.configure_modem()
-        yield modem.send_sms(options['to-addr'], options['message'])
+        yield modem.send_sms(cmd_options['to-addr'], cmd_options['message'])
         reactor.stop()
 
     @inlineCallbacks
     def ussd_session(self, modem, options):
         log.msg('Connecting to modem.')
-        modem.verbose = options['verbose']
+        cmd_options = options.subOptions
         yield modem.configure_modem()
-        log.msg('Connected, starting console for: %s' % (options['code'],))
+        log.msg('Connected, starting console for: %s' % (cmd_options['code'],))
         console = USSDConsole(modem, on_exit=self.shutdown)
         stdio.StandardIO(console)
-        log.msg('Dialing: %s' % (options['code'],))
-        yield console.dial(options['code'])
+        log.msg('Dialing: %s' % (cmd_options['code'],))
+        yield console.dial(cmd_options['code'])
+
+    @inlineCallbacks
+    def probe_modem(self, modem, options):
+        result = yield modem.probe()
+        [_, imsi, _, manufacturer, _] = result
+        log.msg('Manufacturer: %s' % (manufacturer,))
+        log.msg('IMSI: %s' % (imsi,))
+        reactor.stop()
 
     def shutdown(self, resp):
         reactor.callLater(2, reactor.stop)

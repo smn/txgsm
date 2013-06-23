@@ -46,7 +46,10 @@ class TxGSMProtocol(LineReceiver):
 
     def next(self, command, expect='OK'):
         def handler(result):
-            return self.send_command(command, expect)
+            d = self.send_command(command, expect)
+            # collect all responses from the modem in a big list
+            d.addCallback(lambda r: result + r)
+            return d
         return handler
 
     def configure_modem(self):
@@ -70,12 +73,22 @@ class TxGSMProtocol(LineReceiver):
                 expect='> '))
             d.addCallback(self.next('%s%s' % (pdu.pdu, self.CTRL_Z)))
 
-        d.callback(None)
+        d.callback([])
         return d
 
     def dial_ussd_code(self, code):
         return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
                                  expect='+CUSD')
+
+    def probe(self):
+        """
+        See if we're talking to something GSM-like and if so,
+        try and get some useful information out of it.
+        """
+        d = self.send_command('ATE0', expect='OK')
+        d.addCallback(self.next('AT+CIMI'))
+        d.addCallback(self.next('AT+CGMM'))
+        return d
 
     def rawDataReceived(self, data):
         self.buffer += data
