@@ -66,11 +66,12 @@ class TxGSMTestCase(TxGSMBaseTestCase):
             self.assertTrue('Unsollicited response' in err_log['message'][0])
             self.assertTrue('+FOO' in err_log['message'][0])
 
+    @inlineCallbacks
     def test_probe(self):
         d = self.modem.probe()
-        self.assertExchange('ATE0', ['OK'])
-        self.assertExchange('AT+CIMI', ['01234123412341234'])
-        self.assertExchange('AT+CGMM', ['Foo Bar Corp'])
+        self.assertExchange(['ATE0'], ['OK'])
+        self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
+        self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
         response = yield d
         self.assertEqual(response,
                          ['OK',
