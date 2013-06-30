@@ -35,7 +35,7 @@ install_requires, dependency_links = parse_requirements("requirements.pip")
 
 setup(
     name="txgsm",
-    version="0.1",
+    version="0.1.1",
     url='http://github.com/smn/txgsm',
     license='BSD',
     description="Utilities for talking to a GSM modem over USB via AT "
@@ -49,7 +49,6 @@ setup(
     ],
     package_data={
         'twisted.plugins': ['twisted/plugins/txgsm_plugin.py'],
-        'txgsm.etc': ['txgsm/etc/*']
     },
     include_package_data=True,
     install_requires=install_requires,

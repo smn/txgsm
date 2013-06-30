@@ -17,11 +17,9 @@ class TxGSMTestCase(TxGSMBaseTestCase):
         self.assertExchange(['AT+CMGF=0'], ['OK'])
         self.assertExchange(['ATE0'], ['OK'])
         self.assertExchange(['AT+CMEE=1'], ['OK'])
-        self.assertExchange(['AT+WIND=0'], ['OK'])
         self.assertExchange(['AT+CSMS=1'], ['OK'])
-        self.assertExchange(['AT+CSQ'], ['OK'])
         response = yield d
-        self.assertEqual(response, ['OK'])
+        self.assertEqual(response, ['OK', 'OK', 'OK', 'OK'])
 
     @inlineCallbacks
     def test_send_sms(self):
@@ -31,7 +29,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
         [pdu_payload] = self.get_next_commands()
         self.reply('OK')
         response = yield d
-        self.assertEqual(response, ['OK'])
+        self.assertEqual(response, ['> ', 'OK'])
 
     @inlineCallbacks
     def test_send_multipart_sms(self):
@@ -45,7 +43,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
         [pdu_payload] = self.get_next_commands()
         self.reply('OK')
         response = yield d
-        self.assertEqual(response, ['OK'])
+        self.assertEqual(response, ['> ', 'OK', '> ', 'OK'])
 
     @inlineCallbacks
     def test_ussd_session(self):
@@ -67,6 +65,21 @@ class TxGSMTestCase(TxGSMBaseTestCase):
             [err_log] = catcher.logs
             self.assertTrue('Unsollicited response' in err_log['message'][0])
             self.assertTrue('+FOO' in err_log['message'][0])
+
+    @inlineCallbacks
+    def test_probe(self):
+        d = self.modem.probe()
+        self.assertExchange(['ATE0'], ['OK'])
+        self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
+        self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
+        response = yield d
+        self.assertEqual(response,
+                         ['OK',
+                          '01234123412341234',
+                          'OK',
+                          'Foo Bar Corp',
+                          'OK'
+                          ])
 
 
 class TxGSMServiceTestCase(TestCase):
