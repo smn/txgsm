@@ -1,4 +1,5 @@
 from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.test import proto_helpers
 from twisted.python import log
 
@@ -17,17 +18,34 @@ class TxGSMBaseTestCase(TestCase):
         dl = delimiter or self.modem.delimiter
         self.modem.dataReceived(data + dl)
 
-    def get_next_commands(self, clear=True):
-        commands = self.modem_transport.value().split(self.modem.delimiter)
-        if clear:
-            self.modem_transport.clear()
-        return filter(None, commands)
+    def wait_for_next_commands(self, clear=True):
 
+        d = Deferred()
+
+        def check_for_input():
+            if not self.modem_transport.value():
+                reactor.callLater(0, check_for_input)
+                return
+
+            commands = self.modem_transport.value().split(
+                self.modem.delimiter)
+
+            if clear:
+                self.modem_transport.clear()
+
+            d.callback(filter(None, commands))
+
+        check_for_input()
+        return d
+
+    @inlineCallbacks
     def assertCommands(self, commands):
-        self.assertEqual(commands, self.get_next_commands())
+        received_commands = yield self.wait_for_next_commands()
+        self.assertEqual(commands, received_commands)
 
+    @inlineCallbacks
     def assertExchange(self, input, output):
-        self.assertCommands(input)
+        yield self.assertCommands(input)
         for reply in output:
             self.reply(reply)
 

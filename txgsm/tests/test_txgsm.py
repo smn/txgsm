@@ -14,19 +14,19 @@ class TxGSMTestCase(TxGSMBaseTestCase):
     @inlineCallbacks
     def test_configure_modem(self):
         d = self.modem.configure_modem()
-        self.assertExchange(['AT+CMGF=0'], ['OK'])
-        self.assertExchange(['ATE0'], ['OK'])
-        self.assertExchange(['AT+CMEE=1'], ['OK'])
-        self.assertExchange(['AT+CSMS=1'], ['OK'])
+        yield self.assertExchange(['AT+CMGF=0'], ['OK'])
+        yield self.assertExchange(['ATE0'], ['OK'])
+        yield self.assertExchange(['AT+CMEE=1'], ['OK'])
+        yield self.assertExchange(['AT+CSMS=1'], ['OK'])
         response = yield d
         self.assertEqual(response, ['OK', 'OK', 'OK', 'OK'])
 
     @inlineCallbacks
     def test_send_sms(self):
         d = self.modem.send_sms('+27761234567', 'hello world')
-        self.assertCommands(['AT+CMGS=23'])
+        yield self.assertCommands(['AT+CMGS=23'])
         self.reply('> ', delimiter='')
-        [pdu_payload] = self.get_next_commands()
+        [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
         response = yield d
         self.assertEqual(response, ['> ', 'OK'])
@@ -34,13 +34,13 @@ class TxGSMTestCase(TxGSMBaseTestCase):
     @inlineCallbacks
     def test_send_multipart_sms(self):
         d = self.modem.send_sms('+27761234567', '1' * 180)
-        self.assertCommands(['AT+CMGS=153'])
+        yield self.assertCommands(['AT+CMGS=153'])
         self.reply('> ', delimiter='')
-        [pdu_payload] = self.get_next_commands()
+        [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
-        self.assertCommands(['AT+CMGS=43'])
+        yield self.assertCommands(['AT+CMGS=43'])
         self.reply('> ', delimiter='')
-        [pdu_payload] = self.get_next_commands()
+        [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
         response = yield d
         self.assertEqual(response, ['> ', 'OK', '> ', 'OK'])
@@ -48,7 +48,7 @@ class TxGSMTestCase(TxGSMBaseTestCase):
     @inlineCallbacks
     def test_ussd_session(self):
         d = self.modem.dial_ussd_code('*100#')
-        self.assertExchange(
+        yield self.assertExchange(
             input=['AT+CUSD=1,"*100#",15'],
             output=[
                 'OK',
@@ -69,9 +69,9 @@ class TxGSMTestCase(TxGSMBaseTestCase):
     @inlineCallbacks
     def test_probe(self):
         d = self.modem.probe()
-        self.assertExchange(['ATE0'], ['OK'])
-        self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
-        self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
+        yield self.assertExchange(['ATE0'], ['OK'])
+        yield self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
+        yield self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
         response = yield d
         self.assertEqual(response,
                          ['OK',
