@@ -58,8 +58,8 @@ class USSDConsole(Console):
         d.addCallback(self.handle_response)
         return d
 
-    def handle_response(self, resp):
-        operation, content = self.parse_ussd_response(resp)
+    def handle_response(self, result):
+        operation, content = self.parse_ussd_response(result['response'])
         self.sendLine(content)
         if operation == self.FURTHER_ACTION:
             self.prompt()

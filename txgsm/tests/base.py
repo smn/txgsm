@@ -1,4 +1,6 @@
 from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet import reactor
 from twisted.test import proto_helpers
 from twisted.python import log
 
@@ -13,23 +15,46 @@ class TxGSMBaseTestCase(TestCase):
         self.modem_transport = proto_helpers.StringTransport()
         self.modem.makeConnection(self.modem_transport)
 
-    def reply(self, data, delimiter=None):
-        dl = delimiter or self.modem.delimiter
-        self.modem.dataReceived(data + dl)
+    def reply(self, data, delimiter=None, modem=None):
+        modem = modem or self.modem
+        dl = delimiter or modem.delimiter
+        modem.dataReceived(data + dl)
 
-    def get_next_commands(self, clear=True):
-        commands = self.modem_transport.value().split(self.modem.delimiter)
-        if clear:
-            self.modem_transport.clear()
-        return filter(None, commands)
+    def wait_for_next_commands(self, clear=True, modem=None, transport=None):
 
-    def assertCommands(self, commands):
-        self.assertEqual(commands, self.get_next_commands())
+        modem = modem or self.modem
+        transport = transport or self.modem_transport
 
-    def assertExchange(self, input, output):
-        self.assertCommands(input)
+        d = Deferred()
+
+        def check_for_input():
+            if not transport.value():
+                reactor.callLater(0, check_for_input)
+                return
+
+            commands = transport.value().split(modem.delimiter)
+
+            if clear:
+                transport.clear()
+
+            d.callback(filter(None, commands))
+
+        check_for_input()
+        return d
+
+    @inlineCallbacks
+    def assertCommands(self, commands, clear=True, modem=None, transport=None):
+        received_commands = yield self.wait_for_next_commands(
+            clear=clear, modem=modem, transport=transport)
+        self.assertEqual(commands, received_commands)
+
+    @inlineCallbacks
+    def assertExchange(self, input, output, clear=True, modem=None,
+                       transport=None):
+        yield self.assertCommands(input, clear=clear, modem=modem,
+                                  transport=transport)
         for reply in output:
-            self.reply(reply)
+            self.reply(reply, modem=modem)
 
 
 # Shamelessly copyied from @Hodgestar's contribution to
