@@ -15,24 +15,27 @@ class TxGSMBaseTestCase(TestCase):
         self.modem_transport = proto_helpers.StringTransport()
         self.modem.makeConnection(self.modem_transport)
 
-    def reply(self, data, delimiter=None):
-        dl = delimiter or self.modem.delimiter
-        self.modem.dataReceived(data + dl)
+    def reply(self, data, delimiter=None, modem=None):
+        modem = modem or self.modem
+        dl = delimiter or modem.delimiter
+        modem.dataReceived(data + dl)
 
-    def wait_for_next_commands(self, clear=True):
+    def wait_for_next_commands(self, clear=True, modem=None, transport=None):
+
+        modem = modem or self.modem
+        transport = transport or self.modem_transport
 
         d = Deferred()
 
         def check_for_input():
-            if not self.modem_transport.value():
+            if not transport.value():
                 reactor.callLater(0, check_for_input)
                 return
 
-            commands = self.modem_transport.value().split(
-                self.modem.delimiter)
+            commands = transport.value().split(modem.delimiter)
 
             if clear:
-                self.modem_transport.clear()
+                transport.clear()
 
             d.callback(filter(None, commands))
 
@@ -40,15 +43,18 @@ class TxGSMBaseTestCase(TestCase):
         return d
 
     @inlineCallbacks
-    def assertCommands(self, commands):
-        received_commands = yield self.wait_for_next_commands()
+    def assertCommands(self, commands, clear=True, modem=None, transport=None):
+        received_commands = yield self.wait_for_next_commands(
+            clear=clear, modem=modem, transport=transport)
         self.assertEqual(commands, received_commands)
 
     @inlineCallbacks
-    def assertExchange(self, input, output):
-        yield self.assertCommands(input)
+    def assertExchange(self, input, output, clear=True, modem=None,
+                       transport=None):
+        yield self.assertCommands(input, clear=clear, modem=modem,
+                                  transport=transport)
         for reply in output:
-            self.reply(reply)
+            self.reply(reply, modem=modem)
 
 
 # Shamelessly copyied from @Hodgestar's contribution to

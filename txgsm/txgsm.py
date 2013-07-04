@@ -34,10 +34,12 @@ class TxGSMProtocol(LineReceiver):
     def connectionMade(self):
         self.log('Connection made')
 
-    def send_command(self, command, expect='OK'):
+    def send_command(self, command, expect='OK', timeout=None):
         self.log('Sending: %r' % (command,))
         resp = Deferred()
         resp.addCallback(self.debug)
+        if timeout:
+            reactor.callLater(timeout, resp.cancel)
         self.deferreds.append((command, expect, resp))
         self.sendLine(command)
         return resp
