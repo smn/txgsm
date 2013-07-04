@@ -1,5 +1,6 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet import reactor
 from twisted.test import proto_helpers
 from twisted.python import log
 

@@ -19,8 +19,10 @@ class TxGSMProtocol(LineReceiver):
     verbose = False
 
     def __init__(self):
-        # AT switches between '\r' and '\r\n' a bit so
-        # using lineReceived() does not always work.
+        # AT switches being purely line oriented and sometimes not
+        # especially when sending multipart SMSs which has a '^> $' prompt
+        # without a '\r\n' that we need to wait for.
+        # As a result using lineReceived() does not always work.
         self.setRawMode()
         self.deferreds = []
         self.buffer = b''
@@ -36,7 +38,7 @@ class TxGSMProtocol(LineReceiver):
         self.log('Sending: %r' % (command,))
         resp = Deferred()
         resp.addCallback(self.debug)
-        self.deferreds.append((expect, resp))
+        self.deferreds.append((command, expect, resp))
         self.sendLine(command)
         return resp
 
@@ -47,17 +49,18 @@ class TxGSMProtocol(LineReceiver):
     def next(self, command, expect='OK'):
         def handler(result):
             d = self.send_command(command, expect)
-            # collect all responses from the modem in a big list
-            d.addCallback(lambda r: result + r)
+            d.addCallback(lambda r: result + [r])
             return d
         return handler
 
     def configure_modem(self):
         # Sensible defaults shamelessly copied from pygsm.
-        d = self.send_command('AT+CMGF=0')     # PDU mode
-        d.addCallback(self.next('ATE0'))       # Disable echo
+        d = Deferred()
+        d.addCallback(self.next('ATE0'))  # Disable echo
+        d.addCallback(self.next('AT+CMGF=0'))  # PDU mode
         d.addCallback(self.next('AT+CMEE=1'))  # More useful errors
         d.addCallback(self.next('AT+CSMS=1'))  # set SMS mode to phase 2+
+        d.callback([])
         return d
 
     def send_sms(self, msisdn, text):
@@ -85,9 +88,11 @@ class TxGSMProtocol(LineReceiver):
         See if we're talking to something GSM-like and if so,
         try and get some useful information out of it.
         """
-        d = self.send_command('ATE0', expect='OK')
+        d = Deferred()
+        d.addCallback(self.next('ATE0'))
         d.addCallback(self.next('AT+CIMI'))
         d.addCallback(self.next('AT+CGMM'))
+        reactor.callLater(0, d.callback, [])
         return d
 
     def rawDataReceived(self, data):
@@ -97,13 +102,17 @@ class TxGSMProtocol(LineReceiver):
             log.err('Unsollicited response: %r' % (data,))
             return
 
-        expect, deferred = self.deferreds[0]
+        _, expect, _ = self.deferreds[0]
 
         if expect in self.buffer:
-            expect, deferred = self.deferreds.pop(0)
+            command, expect, deferred = self.deferreds.pop(0)
             return_buffer, self.buffer = self.buffer, b''
-            deferred.callback(filter(None,
-                                     return_buffer.split(self.delimiter)))
+            result = {
+                'command': [command],
+                'expect': expect,
+                'response': filter(None, return_buffer.split(self.delimiter))
+            }
+            deferred.callback(result)
 
 
 class TxGSMService(Service):
