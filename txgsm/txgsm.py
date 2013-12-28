@@ -9,7 +9,7 @@ from twisted.python import log
 
 from .utils import quote
 
-from messaging.sms import SmsSubmit
+from messaging.sms import SmsSubmit, SmsDeliver
 
 
 class TxGSMProtocol(LineReceiver):
@@ -84,6 +84,27 @@ class TxGSMProtocol(LineReceiver):
     def dial_ussd_code(self, code):
         return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
                                  expect='+CUSD')
+
+    def list_received_messages(self, status=4):
+        d = self.send_command('AT+CMGL=%i' % (status,))
+
+        def parse_cmgl_response(result):
+            response = result['response']
+            # Lines alternative between the +CMGL response and the
+            # actual PDU containing the SMS
+            found = False
+            messages = []
+            for line in response:
+                if line.startswith('+CMGL:'):
+                    found = True
+                elif found:
+                    messages.append(SmsDeliver(line))
+                    found = False
+
+            return messages
+
+        return d.addCallback(parse_cmgl_response)
+        return d
 
     def probe(self):
         """
