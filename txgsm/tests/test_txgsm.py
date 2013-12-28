@@ -92,6 +92,8 @@ class TxGSMTestCase(TxGSMBaseTestCase):
     @inlineCallbacks
     def test_receive_sms(self):
         d = self.modem.list_received_messages(status=4)
+        # Using PDU samples from
+        # http://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/at-cmgl-pdu-mode/
         yield self.assertExchange(
             input=['AT+CMGL=4'],
             output=[
