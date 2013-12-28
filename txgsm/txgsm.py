@@ -103,7 +103,7 @@ class TxGSMProtocol(LineReceiver):
 
             return messages
 
-        return d.addCallback(parse_cmgl_response)
+        d.addCallback(parse_cmgl_response)
         return d
 
     def probe(self):
