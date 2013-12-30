@@ -136,24 +136,3 @@ class TxGSMProtocol(LineReceiver):
                 'response': filter(None, return_buffer.split(self.delimiter))
             }
             deferred.callback(result)
-
-
-class TxGSMService(Service):
-
-    protocol = TxGSMProtocol
-    serial_port_class = SerialPort
-
-    def __init__(self, device, **conn_options):
-        self.device = device
-        self.conn_options = conn_options
-        self.onProtocol = Deferred()
-        self.onProtocol.addErrback(log.err)
-
-    def startService(self):
-        p = self.protocol()
-        self.port = self.serial_port_class(p, self.device, reactor,
-                                           **self.conn_options)
-        self.onProtocol.callback(p)
-
-    def stopService(self):
-        self.port.loseConnection()
