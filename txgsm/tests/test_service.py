@@ -1,6 +1,6 @@
 from twisted.internet.defer import inlineCallbacks
 
-from txgsm.tests.base import TxGSMBaseTestCase
+from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
 from txgsm.service import TxGSMServiceMaker, TxGSMService, Options
 
 from mock import Mock
@@ -18,7 +18,7 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
         #  Protocol created by TxGSMBaseTestCase
         return self.modem
 
-    def patch_shutdown(self, result):
+    def patch_shutdown(self, result=None):
         # noop, pass along result instead of shutting down
         return result
 
@@ -64,3 +64,28 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
                 'response': ['OK']
             }
         ])
+
+    @inlineCallbacks
+    def test_list_sms(self):
+        service = self.make_service('list-sms', [
+            '--status', 4
+        ])
+        yield self.assert_configure_modem()
+        with LogCatcher() as catcher:
+            yield self.assertExchange(
+                input=['AT+CMGL=4'],
+                output=[
+                    '+CMGL: 1,0,,39',
+                    ('07911326040011F5240B911326880736F400001110810173624016547' +
+                     '47A0E4ACF41F4329E0E6A97E7F3F0B90C8A01'),
+                    '+CMGL: 2,0,,39',
+                    ('07911326040011F5240B911326880736F400001110810173234016547' +
+                     '47A0E4ACF41F4329E0E6A97E7F3F0B90C9201'),
+                    'OK'
+                ])
+            result = yield service.onProtocol
+        [sms1_log, sms2_log] = catcher.logs
+        self.assertEqual('This is text message 1',
+                         sms1_log['message'][0]['text'])
+        self.assertEqual('This is text message 2',
+                         sms2_log['message'][0]['text'])

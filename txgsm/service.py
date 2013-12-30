@@ -130,8 +130,8 @@ class TxGSMServiceMaker(object):
         messages = yield modem.list_received_messages(
             int(cmd_options['status']))
         for message in messages:
-            pprint(message.data)
-        self.shutdown()
+            log.msg(message.data)
+        returnValue(self.shutdown())
 
     @inlineCallbacks
     def ussd_session(self, modem, options):
@@ -154,5 +154,5 @@ class TxGSMServiceMaker(object):
         log.msg('IMSI: %s' % (imsi,))
         self.shutdown()
 
-    def shutdown(self, resp):
+    def shutdown(self, resp=None):
         reactor.callLater(0, reactor.stop)
