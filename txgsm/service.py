@@ -140,9 +140,10 @@ class TxGSMServiceMaker(object):
         yield modem.configure_modem()
         log.msg('Connected, starting console for: %s' % (cmd_options['code'],))
         console = USSDConsole(modem, on_exit=self.shutdown)
-        stdio.StandardIO(console)
+        sio = stdio.StandardIO(console)
         log.msg('Dialing: %s' % (cmd_options['code'],))
         yield console.dial(cmd_options['code'])
+        returnValue(sio)
 
     @inlineCallbacks
     def probe_modem(self, modem, options):

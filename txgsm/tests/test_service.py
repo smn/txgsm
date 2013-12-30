@@ -2,6 +2,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
 from txgsm.service import TxGSMServiceMaker, TxGSMService, Options
+from txgsm.utils import USSDConsole
 
 from mock import Mock
 
@@ -89,3 +90,28 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
                          sms1_log['message'][0]['text'])
         self.assertEqual('This is text message 2',
                          sms2_log['message'][0]['text'])
+
+    @inlineCallbacks
+    def test_ussd_session(self):
+        responses = []
+        self.patch(USSDConsole, 'handle_response', responses.append)
+
+        service = self.make_service('ussd-session', [
+            '--code', '*100#'
+        ])
+        yield self.assert_configure_modem()
+        yield self.assertExchange(
+            input=['AT+CUSD=1,"*100#",15'],
+            output=[
+                'OK',
+                ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
+                 'Dial *111# for Airtime Advance. T&Cs apply.",255')
+            ])
+        standard_io = yield service.onProtocol
+        standard_io.loseConnection()
+        [ussd_resp] = responses
+        self.assertEqual(ussd_resp['response'], [
+            'OK',
+            ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
+             'Dial *111# for Airtime Advance. T&Cs apply.",255')
+        ])
