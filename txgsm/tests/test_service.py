@@ -115,3 +115,16 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
             ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
              'Dial *111# for Airtime Advance. T&Cs apply.",255')
         ])
+
+    @inlineCallbacks
+    def test_probe_modem(self):
+        service = self.make_service('probe-modem', [])
+        with LogCatcher() as catcher:
+            yield self.assertExchange(['ATE0'], ['OK'])
+            yield self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
+            yield self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
+            yield service.onProtocol
+
+        [entry1, entry2] = catcher.logs
+        self.assertEqual(entry1['message'][0], 'Manufacturer: Foo Bar Corp')
+        self.assertEqual(entry2['message'][0], 'IMSI: 01234123412341234')
