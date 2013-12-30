@@ -1,3 +1,4 @@
+# -*- test-case-name: txgsm.tests.test_service -*-
 import sys
 from pprint import pprint
 from zope.interface import implements
@@ -6,7 +7,7 @@ from twisted.python import usage
 from twisted.plugin import IPlugin
 from twisted.application.service import Service
 from twisted.application.service import IServiceMaker
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.internet import reactor, stdio
 from twisted.internet.serialport import SerialPort
 from twisted.python import log
@@ -71,8 +72,11 @@ class TxGSMService(Service):
         self.onProtocol = Deferred()
         self.onProtocol.addErrback(log.err)
 
+    def getProtocol(self):
+        return self.protocol()
+
     def startService(self):
-        p = self.protocol()
+        p = self.getProtocol()
         self.port = self.serial_port_class(p, self.device, reactor,
                                            **self.conn_options)
         self.onProtocol.callback(p)
@@ -115,8 +119,9 @@ class TxGSMServiceMaker(object):
     def send_sms(self, modem, options):
         cmd_options = options.subOptions
         yield modem.configure_modem()
-        yield modem.send_sms(cmd_options['to-addr'], cmd_options['message'])
-        reactor.stop()
+        result = yield modem.send_sms(cmd_options['to-addr'],
+                                      cmd_options['message'])
+        returnValue(self.shutdown(result))
 
     @inlineCallbacks
     def list_sms(self, modem, options):
@@ -126,7 +131,7 @@ class TxGSMServiceMaker(object):
             int(cmd_options['status']))
         for message in messages:
             pprint(message.data)
-        reactor.stop()
+        self.shutdown()
 
     @inlineCallbacks
     def ussd_session(self, modem, options):
@@ -147,7 +152,7 @@ class TxGSMServiceMaker(object):
         manufacturer, ok = manufacturer_result['response']
         log.msg('Manufacturer: %s' % (manufacturer,))
         log.msg('IMSI: %s' % (imsi,))
-        reactor.stop()
+        self.shutdown()
 
     def shutdown(self, resp):
-        reactor.callLater(2, reactor.stop)
+        reactor.callLater(0, reactor.stop)

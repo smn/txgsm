@@ -10,7 +10,7 @@ from txgsm.protocol import TxGSMProtocol
 from mock import Mock
 
 
-class TxGSMTestCase(TxGSMBaseTestCase):
+class TxGSMProtocolTestCase(TxGSMBaseTestCase):
 
     timeout = 1
 

@@ -1,4 +1,4 @@
-# -*- test-case-name: txgsm.tests.test_txgsm -*-
+# -*- test-case-name: txgsm.tests.test_protocol -*-
 # -*- coding: utf-8 -*-
 from twisted.internet.serialport import SerialPort
 from twisted.internet import reactor
