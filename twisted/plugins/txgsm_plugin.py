@@ -1,4 +1,5 @@
 import sys
+from pprint import pprint
 from zope.interface import implements
 
 from twisted.python import usage
@@ -20,6 +21,13 @@ class SendSMS(usage.Options):
     ]
 
 
+class ListSMS(usage.Options):
+    optParameters = [
+        ['status', 's', 4, 'What messages to read (0: unread, 1: read, '
+            '2: unsent, 3: sent, 4: all)'],
+    ]
+
+
 class USSDSession(usage.Options):
 
     optParameters = [
@@ -35,6 +43,7 @@ class Options(usage.Options):
 
     subCommands = [
         ['send-sms', None, SendSMS, "Send an SMS"],
+        ['list-sms', None, ListSMS, "List SMSs on Modem"],
         ['ussd-session', None, USSDSession, 'Start a USSD session'],
         ['probe-modem', None, ProbeModem,
             'Probe the device to see if it is something modem-ish'],
@@ -63,6 +72,7 @@ class TxGSMMaker(object):
 
         dispatch = {
             'send-sms': self.send_sms,
+            'list-sms': self.list_sms,
             'ussd-session': self.ussd_session,
             'probe-modem': self.probe_modem,
         }
@@ -83,6 +93,16 @@ class TxGSMMaker(object):
         cmd_options = options.subOptions
         yield modem.configure_modem()
         yield modem.send_sms(cmd_options['to-addr'], cmd_options['message'])
+        reactor.stop()
+
+    @inlineCallbacks
+    def list_sms(self, modem, options):
+        cmd_options = options.subOptions
+        yield modem.configure_modem()
+        messages = yield modem.list_received_messages(
+            int(cmd_options['status']))
+        for message in messages:
+            pprint(message.data)
         reactor.stop()
 
     @inlineCallbacks
