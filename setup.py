@@ -35,7 +35,7 @@ install_requires, dependency_links = parse_requirements("requirements.pip")
 
 setup(
     name="txgsm",
-    version="0.1.2",
+    version="0.1.3",
     url='http://github.com/smn/txgsm',
     license='BSD',
     description="Utilities for talking to a GSM modem over USB via AT "

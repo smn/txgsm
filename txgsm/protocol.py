@@ -1,4 +1,4 @@
-# -*- test-case-name: txgsm.tests.test_txgsm -*-
+# -*- test-case-name: txgsm.tests.test_protocol -*-
 # -*- coding: utf-8 -*-
 from twisted.internet.serialport import SerialPort
 from twisted.internet import reactor
@@ -9,7 +9,7 @@ from twisted.python import log
 
 from .utils import quote
 
-from messaging.sms import SmsSubmit
+from messaging.sms import SmsSubmit, SmsDeliver
 
 
 class TxGSMProtocol(LineReceiver):
@@ -85,6 +85,27 @@ class TxGSMProtocol(LineReceiver):
         return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
                                  expect='+CUSD')
 
+    def list_received_messages(self, status=4):
+        d = self.send_command('AT+CMGL=%i' % (status,))
+
+        def parse_cmgl_response(result):
+            response = result['response']
+            # Lines alternative between the +CMGL response and the
+            # actual PDU containing the SMS
+            found = False
+            messages = []
+            for line in response:
+                if line.startswith('+CMGL:'):
+                    found = True
+                elif found:
+                    messages.append(SmsDeliver(line))
+                    found = False
+
+            return messages
+
+        d.addCallback(parse_cmgl_response)
+        return d
+
     def probe(self):
         """
         See if we're talking to something GSM-like and if so,
@@ -115,24 +136,3 @@ class TxGSMProtocol(LineReceiver):
                 'response': filter(None, return_buffer.split(self.delimiter))
             }
             deferred.callback(result)
-
-
-class TxGSMService(Service):
-
-    protocol = TxGSMProtocol
-    serial_port_class = SerialPort
-
-    def __init__(self, device, **conn_options):
-        self.device = device
-        self.conn_options = conn_options
-        self.onProtocol = Deferred()
-        self.onProtocol.addErrback(log.err)
-
-    def startService(self):
-        p = self.protocol()
-        self.port = self.serial_port_class(p, self.device, reactor,
-                                           **self.conn_options)
-        self.onProtocol.callback(p)
-
-    def stopService(self):
-        self.port.loseConnection()
