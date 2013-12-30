@@ -4,7 +4,8 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
-from txgsm.txgsm import TxGSMService, TxGSMProtocol
+from txgsm.service import TxGSMService
+from txgsm.protocol import TxGSMProtocol
 
 from mock import Mock
 
