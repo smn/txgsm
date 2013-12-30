@@ -62,6 +62,6 @@ class USSDConsole(Console):
         operation, content = self.parse_ussd_response(result['response'])
         self.sendLine(content)
         if operation == self.FURTHER_ACTION:
-            self.prompt()
+            return self.prompt()
         else:
-            self.on_exit(operation)
+            return self.on_exit(operation)

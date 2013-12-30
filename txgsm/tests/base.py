@@ -4,7 +4,7 @@ from twisted.internet import reactor
 from twisted.test import proto_helpers
 from twisted.python import log
 
-from txgsm.txgsm import TxGSMProtocol
+from txgsm.protocol import TxGSMProtocol
 
 
 class TxGSMBaseTestCase(TestCase):

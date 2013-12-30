@@ -1,13 +1,16 @@
+from datetime import datetime
+
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from txgsm.tests.base import TxGSMBaseTestCase, LogCatcher
-from txgsm.txgsm import TxGSMService, TxGSMProtocol
+from txgsm.service import TxGSMService
+from txgsm.protocol import TxGSMProtocol
 
 from mock import Mock
 
 
-class TxGSMTestCase(TxGSMBaseTestCase):
+class TxGSMProtocolTestCase(TxGSMBaseTestCase):
 
     timeout = 1
 
@@ -86,6 +89,47 @@ class TxGSMTestCase(TxGSMBaseTestCase):
                 'response': ['OK']
             }]
         )
+
+    @inlineCallbacks
+    def test_receive_sms(self):
+        d = self.modem.list_received_messages(status=4)
+        # Using PDU samples from
+        # http://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/at-cmgl-pdu-mode/
+        yield self.assertExchange(
+            input=['AT+CMGL=4'],
+            output=[
+                '+CMGL: 1,0,,39',
+                ('07911326040011F5240B911326880736F400001110810173624016547' +
+                 '47A0E4ACF41F4329E0E6A97E7F3F0B90C8A01'),
+                '+CMGL: 2,0,,39',
+                ('07911326040011F5240B911326880736F400001110810173234016547' +
+                 '47A0E4ACF41F4329E0E6A97E7F3F0B90C9201'),
+                'OK'
+            ])
+        result = yield d
+        [sms1, sms2] = result
+        self.assertEqual(sms1.data, {
+            'csca': '+31624000115',
+            'sr': None,
+            'type': None,
+            'date': datetime(2011, 1, 18, 9, 37, 26),
+            'text': u'This is text message 1',
+            'fmt': 0,
+            'pid': 0,
+            'dcs': 0,
+            'number': '+31628870634',
+        })
+        self.assertEqual(sms2.data, {
+            'csca': '+31624000115',
+            'sr': None,
+            'type': None,
+            'date': datetime(2011, 1, 18, 9, 37, 32),
+            'text': u'This is text message 2',
+            'fmt': 0,
+            'pid': 0,
+            'dcs': 0,
+            'number': '+31628870634',
+        })
 
     @inlineCallbacks
     def test_ussd_session(self):
