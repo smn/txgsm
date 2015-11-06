@@ -1,6 +1,5 @@
 # -*- test-case-name: txgsm.tests.test_service -*-
 import sys
-from pprint import pprint
 from zope.interface import implements
 
 from twisted.python import usage
