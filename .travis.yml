@@ -11,6 +11,6 @@ install:
   - pip install -e .
   - flake8
 script:
-    - py.test --cov=txgsm --cov-report=term
-after_success:
-    - coveralls
+    - py.test # --cov=txgsm --cov-report=term
+# after_success:
+#     - coveralls
