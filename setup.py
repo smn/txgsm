@@ -6,9 +6,12 @@ def listify(filename):
 
 install_requires = listify("requirements.txt")
 
+with open('VERSION', 'r') as fp:
+    version = fp.read().strip()
+
 setup(
     name="txgsm",
-    version="0.1.3",
+    version=version,
     url='http://github.com/smn/txgsm',
     license='BSD',
     description="Utilities for talking to a GSM modem over USB via AT "
