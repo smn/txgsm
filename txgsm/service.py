@@ -1,6 +1,6 @@
 # -*- test-case-name: txgsm.tests.test_service -*-
 import sys
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.python import usage
 from twisted.plugin import IPlugin
@@ -84,8 +84,8 @@ class TxGSMService(Service):
         self.port.loseConnection()
 
 
+@implementer(IServiceMaker, IPlugin)
 class TxGSMServiceMaker(object):
-    implements(IServiceMaker, IPlugin)
     tapname = "txgsm"
     description = ("Utilities for talking to a GSM modem over USB via AT "
                    "commands.")
