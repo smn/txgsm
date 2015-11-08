@@ -57,6 +57,8 @@ class Options(usage.Options):
 
     optParameters = [
         ["device", "d", None, "The device to connect to."],
+        ["baudrate", "b", 9600, "Baud rate such as 9600 or 115200."],
+        ["timeout", "t", None, "Set a read timeout value."],
     ]
 
 
@@ -93,7 +95,11 @@ class TxGSMServiceMaker(object):
 
     def makeService(self, options):
         device = options['device']
-        service = TxGSMService(device)
+        conn_options = {
+            'baudrate': options['baudrate'],
+            'timeout': options['timeout']
+        }
+        service = TxGSMService(device, **conn_options)
         service.onProtocol.addCallback(self.set_verbosity, options)
 
         dispatch = {

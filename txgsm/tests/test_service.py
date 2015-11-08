@@ -30,9 +30,10 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
         yield self.assertExchange(['AT+CMEE=1'], ['OK'])
         yield self.assertExchange(['AT+CSMS=1'], ['OK'])
 
-    def make_service(self, command, options):
-        args = ['--device', '/dev/foo', command]
-        args.extend(options)
+    def make_service(self, command, cmdOptions=[], connOptions=[]):
+        args = ['--device', '/dev/foo']
+        args.extend(connOptions)
+        args.extend([command] + cmdOptions)
         service_options = Options()
         service_options.parseOptions(args)
         service_maker = TxGSMServiceMaker()
@@ -115,6 +116,15 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
             ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
              'Dial *111# for Airtime Advance. T&Cs apply.",255')
         ])
+
+    def test_service_options(self):
+        baudrate = '115200'
+        timeout = '1000'
+        service = self.make_service('probe-modem', connOptions=[
+            '--baudrate', baudrate, '--timeout', timeout])
+
+        self.assertEqual(service.conn_options['baudrate'], baudrate)
+        self.assertEqual(service.conn_options['timeout'], timeout)
 
     @inlineCallbacks
     def test_probe_modem(self):
