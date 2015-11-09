@@ -96,8 +96,8 @@ class TxGSMServiceMaker(object):
     def makeService(self, options):
         device = options['device']
         conn_options = {
-            'baudrate': options['baudrate'],
-            'timeout': options['timeout']
+            'baudrate': int(options['baudrate']),
+            'timeout': int(options['timeout'])
         }
         service = TxGSMService(device, **conn_options)
         service.onProtocol.addCallback(self.set_verbosity, options)

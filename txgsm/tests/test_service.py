@@ -118,8 +118,8 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
         ])
 
     def test_service_options(self):
-        baudrate = '115200'
-        timeout = '1000'
+        baudrate = 115200
+        timeout = 1000
         service = self.make_service('probe-modem', connOptions=[
             '--baudrate', baudrate, '--timeout', timeout])
 
