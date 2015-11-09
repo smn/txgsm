@@ -4,7 +4,7 @@ txgsm
 Utilities for talking to a GSM modem over USB via AT commands.
 Will NOT work with all modems, YMMV.
 
-|travis|_ |coveralls|_
+|travis|_ |coveralls|_ |pypi|_ |license|_
 
 ::
 
@@ -92,4 +92,10 @@ Adding ``-v`` or ``--verbose`` to see the AT commands.
 
 .. |coveralls| image:: https://coveralls.io/repos/smn/txgsm/badge.png?branch=develop
 .. _coveralls: https://coveralls.io/r/smn/txgsm
+
+.. |pypi| image:: https://img.shields.io/pypi/v/txgsm.svg
+.. _pypi: https://pypi.python.org/pypi/txgsm
+
+.. |license| image:: https://img.shields.io/badge/license-BSD-blue.svg
+.. _license: https://raw.githubusercontent.com/smn/txgsm/develop/LICENSE
 
