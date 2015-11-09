@@ -1,11 +1,29 @@
+sudo: false
 language: python
 python:
   - 2.6
   - 2.7
+  - 3.5
+matrix:
+  allow_failures:
+    - python: 3.5
 install:
-    - pip install coveralls --use-mirrors
-    - pip install -r requirements.pip --use-mirrors
+  - pip install https://github.com/thijstriemstra/python-messaging/archive/master.zip
+  - pip install coveralls
+  - pip install wheel
+  - pip install -r requirements-dev.txt
+  - pip install -e .
+  - flake8
 script:
-    - coverage run --source=txgsm `which trial` txgsm
+    - py.test --cov=txgsm --cov-report=term
 after_success:
     - coveralls
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: smn
+  password:
+      secure: "lALu68z75ANy0tD2SNVh3+IEz/RAbQyKiYtjXkxPKIg/j6wb8BL65CG3dhf9yzfTRR01BvqD4aqCfq6saeaqAyv6r5yEcmLFjMRE3uf9SlRXSnFXxJ+LRedrNJVZsFn3QBrbAZh6S+SMrOcoynrZQ6qHQMFDSxR0jn4b2SWGQyQ="
+  on:
+    tags: true
+    all_branches: true
