@@ -88,7 +88,7 @@ class TxGSMService(Service):
 
 @implementer(IServiceMaker, IPlugin)
 class TxGSMServiceMaker(object):
-    tapname = "txgsm"
+    tapname = 'txgsm'
     description = ("Utilities for talking to a GSM modem over USB via AT "
                    "commands.")
     options = Options
@@ -97,8 +97,11 @@ class TxGSMServiceMaker(object):
         device = options['device']
         conn_options = {
             'baudrate': int(options['baudrate']),
-            'timeout': int(options['timeout'])
+            'timeout': None
         }
+        if options['timeout'] is not None:
+            conn_options['timeout'] = int(options['timeout'])
+
         service = TxGSMService(device, **conn_options)
         service.onProtocol.addCallback(self.set_verbosity, options)
 
