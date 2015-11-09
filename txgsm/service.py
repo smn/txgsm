@@ -1,6 +1,6 @@
 # -*- test-case-name: txgsm.tests.test_service -*-
 import sys
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.python import usage
 from twisted.plugin import IPlugin
@@ -57,6 +57,8 @@ class Options(usage.Options):
 
     optParameters = [
         ["device", "d", None, "The device to connect to."],
+        ["baudrate", "b", 9600, "Baud rate such as 9600 or 115200."],
+        ["timeout", "t", None, "Set a read timeout value."],
     ]
 
 
@@ -84,16 +86,23 @@ class TxGSMService(Service):
         self.port.loseConnection()
 
 
+@implementer(IServiceMaker, IPlugin)
 class TxGSMServiceMaker(object):
-    implements(IServiceMaker, IPlugin)
-    tapname = "txgsm"
+    tapname = 'txgsm'
     description = ("Utilities for talking to a GSM modem over USB via AT "
                    "commands.")
     options = Options
 
     def makeService(self, options):
         device = options['device']
-        service = TxGSMService(device)
+        conn_options = {
+            'baudrate': int(options['baudrate']),
+            'timeout': None
+        }
+        if options['timeout'] is not None:
+            conn_options['timeout'] = int(options['timeout'])
+
+        service = TxGSMService(device, **conn_options)
         service.onProtocol.addCallback(self.set_verbosity, options)
 
         dispatch = {
