@@ -1,5 +1,13 @@
-include README.rst
-include requirements.pip
+include README.rst requirements.pip requirements.txt requirements-dev.txt VERSION LICENSE AUTHORS
 include twisted/plugins/txgsm_plugin.py
 recursive-include txgsm *.py
 graft twisted
+
+recursive-include doc *
+prune doc/_build
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *~
+recursive-exclude * .coverage
+recursive-exclude * .DS_Store
