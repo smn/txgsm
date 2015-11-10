@@ -1,2 +1,6 @@
 [run]
-omit = ve/*
+omit =
+    ve/*
+    setup.py
+    doc/*
+    txgsm/tests/*

@@ -4,13 +4,13 @@ python:
   - 2.6
   - 2.7
   - 3.5
+cache: pip
 matrix:
   allow_failures:
     - python: 3.5
 install:
+  - pip install -U pip coveralls wheel
   - pip install https://github.com/thijstriemstra/python-messaging/archive/master.zip
-  - pip install coveralls
-  - pip install wheel
   - pip install -r requirements-dev.txt
   - pip install -e .
   - flake8

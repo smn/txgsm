@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 def listify(filename):
-    return filter(None, open(filename, 'r').read().split('\n'))
+    return list(filter(None, open(filename, 'r').read().split('\n')))
 
 install_requires = listify("requirements.txt")
 
@@ -33,9 +33,12 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
-        'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Networking',
         'Framework :: Twisted',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
     ],
 )
