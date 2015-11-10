@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 def listify(filename):
-    return filter(None, open(filename, 'r').read().split('\n'))
+    return list(filter(None, open(filename, 'r').read().split('\n')))
 
 install_requires = listify("requirements.txt")
 
