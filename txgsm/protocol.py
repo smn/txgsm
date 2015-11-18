@@ -216,8 +216,8 @@ class TxGSMProtocol(ATProtocol):
         """
         d = Deferred()
         d.addCallback(self.next('ATE0'))
-        d.addCallback(self.next('AT+CIMI'))
-        d.addCallback(self.next('AT+CGMM'))
+        d.addCallback(self.next('AT+CIMI', expect=r'^\d+$'))
+        d.addCallback(self.next('AT+CGMM', expect=r'^[\w\s]+$'))
         reactor.callLater(0, d.callback, [])
         return d
 

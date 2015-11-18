@@ -159,19 +159,9 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         yield self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
         response = yield d
         self.assertEqual(response, [
-            {
-                'command': ['ATE0'],
-                'expect': 'OK',
-                'response': ['OK']
-            }, {
-                'command': ['AT+CIMI'],
-                'expect': 'OK',
-                'response': ['01234123412341234', 'OK']
-            }, {
-                'command': ['AT+CGMM'],
-                'expect': 'OK',
-                'response': ['Foo Bar Corp', 'OK']
-            }
+            [],
+            ['01234123412341234'],
+            ['Foo Bar Corp'],
         ])
 
 
