@@ -1,8 +1,10 @@
 # -*- test-case-name: txgsm.tests.test_protocol -*-
 # -*- coding: utf-8 -*-
+import re
+
 from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, maybeDeferred, DeferredList
 from twisted.python import log
 
 from collections import defaultdict
@@ -21,7 +23,6 @@ class ATProtocol(LineReceiver):
         self.command_queue = []
         self.responses_received = []
         self.unsolicited_result_callbacks = defaultdict(list)
-        self.solicited_result_queue = defaultdict(list)
         self.buffer = b''
 
     def log(self, *args):
@@ -54,7 +55,7 @@ class ATProtocol(LineReceiver):
         """
         self.unsolicited_result_callbacks[response].remove(cb)
 
-    def send_command(self, command, expect='OK', timeout=None):
+    def send_command(self, command, expect, timeout=None):
         """
         Send a command to the modem. This function returns a deferred that's
         fired when the value of ``expect`` is received from the modem.
@@ -63,17 +64,20 @@ class ATProtocol(LineReceiver):
             The AT response to be expecting back which signals the response
             expected for this command. This will result in the returned
             Deferred being fired with response as the payload.
+            The will be compiled as a regular expression.
         :param float timeout:
             How many seconds to wait for a response before cancellined the
             Deferred. This will result in the Deferred's ``errback`` being
             fired with a ``CancelledError``.
         """
-        self.log('Sending: %r' % (command,))
+        self.log('Sending: %r, expecting: %r' % (command, expect))
         d = Deferred()
         d.addCallback(self.debug)
+        d.addCallback(
+            self.parse_responses_received, command, re.compile(expect))
         if timeout:
             reactor.callLater(timeout, d.cancel)
-        self.solicit_result(command, expect, d)
+        self.command_queue.append(d)
         self.sendLine(command)
         return d
 
@@ -81,10 +85,12 @@ class ATProtocol(LineReceiver):
         log.msg('DEBUG: %r' % arg)
         return arg
 
-    def solicit_result(self, command, expect, deferred):
-        self.solicited_result_queue[expect].append((command, deferred))
-
     def lineReceived(self, line):
+        # If we're not expecting anything, throw it straight through as
+        # an unsolicited response from the modem
+        if not self.command_queue:
+            self.handle_unsolicited_responses([line])
+
         if line == 'OK':
             responses_received, self.responses_received = (
                 self.responses_received, [])
@@ -98,23 +104,38 @@ class ATProtocol(LineReceiver):
         else:
             self.responses_received.append(line)
 
-    def parse_responses_received(self, responses_received):
+    def parse_responses_received(self, responses_received, command, pattern):
+        matches, unsolicited_responses = [], []
         for line in responses_received:
-            result, _ = line.split(':', 1)
-            expected_handlers = self.solicited_result_queue[result]
-            if expected_handlers:
-                # FIXME: possibility of a race condition here.
-                command, deferred = expected_handlers.pop()
-                deferred.callback({
-                    'command': [command],
-                    'expect': result,
-                    'response': [line],
-                })
-                return
+            if pattern.match(line):
+                matches.append(line)
+            else:
+                unsolicited_responses.append(line)
 
-            unexpected_handlers = self.unsolicited_result_callbacks[result]
-            for handler in unexpected_handlers:
-                handler(line)
+        # NOTE: this does return a deferred and I could chain the matches
+        #       response to it to allow errors to be captured but I am
+        #       chosing not to. Since unsolicited responses can also be
+        #       returned without any command from the application, the
+        #       registered handlers need to handle their own errors anyway
+        #       and so I'm favouring that for consistency.
+        d = self.handle_unsolicited_responses(unsolicited_responses)
+        d.addErrback(log.err)
+
+        return matches
+
+    def handle_unsolicited_responses(self, unsolicited_responses):
+        deferreds = []
+        for pattern, handlers in self.unsolicited_result_callbacks.items():
+            matches = filter(pattern.match, unsolicited_responses)
+            if matches:
+                for handler in handlers:
+                    deferreds.append(maybeDeferred(handler, matches))
+                for match in matches:
+                    unsolicited_responses.remove(match)
+        if unsolicited_responses:
+            log.err('Unhandled unsolicited responses: %r.' % (
+                unsolicited_responses))
+        return DeferredList(deferreds)
 
 
 class TxGSMProtocol(ATProtocol):

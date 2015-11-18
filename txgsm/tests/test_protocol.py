@@ -23,10 +23,7 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         yield self.assertExchange(['AT+CSMS=1'], ['OK'])
         response = yield d
         self.assertEqual(response, [
-            {'command': ['ATE0'], 'expect': 'OK', 'response': ['OK']},
-            {'command': ['AT+CMGF=0'], 'expect': 'OK', 'response': ['OK']},
-            {'command': ['AT+CMEE=1'], 'expect': 'OK', 'response': ['OK']},
-            {'command': ['AT+CSMS=1'], 'expect': 'OK', 'response': ['OK']}
+            [], [], [], []
         ])
 
     @inlineCallbacks
@@ -150,7 +147,8 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         with LogCatcher() as catcher:
             self.reply('+FOO')
             [err_log] = catcher.logs
-            self.assertTrue('Unsollicited response' in err_log['message'][0])
+            self.assertTrue(
+                'Unhandled unsolicited responses' in err_log['message'][0])
             self.assertTrue('+FOO' in err_log['message'][0])
 
     @inlineCallbacks
