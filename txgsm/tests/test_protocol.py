@@ -121,9 +121,7 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
                  'Dial *111# for Airtime Advance. T&Cs apply.",255')
             ])
         result = yield d
-        response = result['response']
-        self.assertEqual(response[0], 'OK')
-        self.assertTrue(response[1].startswith('+CUSD: 2'))
+        self.assertTrue(result.startswith('+CUSD: 2'))
 
     def test_dealing_with_unexpected_events(self):
         with LogCatcher() as catcher:

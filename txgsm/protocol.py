@@ -8,6 +8,7 @@ from twisted.internet.defer import (
     Deferred, maybeDeferred, DeferredList, succeed)
 from twisted.python import log
 
+from functools import partial
 from collections import defaultdict
 
 from .utils import quote
@@ -23,7 +24,7 @@ class ATProtocol(LineReceiver):
     def __init__(self):
         self.command_queue = []
         self.responses_received = []
-        self.unsolicited_result_callbacks = defaultdict(list)
+        self.triggers = defaultdict(list)
         self.buffer = b''
         self.buffer_results = []
 
@@ -34,28 +35,17 @@ class ATProtocol(LineReceiver):
     def connectionMade(self):
         log.msg('Connection made')
 
-    def register_unsolicited_result_callback(self, response, cb):
+    def trigger(self, pattern):
         """
-        Register a callback function that should be called when ``response``
-        is received from the modem when it was not necessarily expected.
+        Returns a deferred that's fired when a pattern is recognised
+        as an unsullicited response from the modem.
 
-        :param str response:
-            The response to be on the lookout for (i.e. ``+CRING``)
-        :param function cb:
-            The callback function to call when ``response`` is seen.
+        :param str pattern:
+            The pattern to be on the lookout for (i.e. ``+CRING``)
         """
-        self.unsolicited_result_callbacks[response].append(cb)
-
-    def deregister_unsolicited_result_callback(self, response, cb):
-        """
-        Deregister a callback function for a specific response.
-
-        :param str response:
-            The response the callback was originally registered for.
-        :param function cb:
-            The callback function to remove.
-        """
-        self.unsolicited_result_callbacks[response].remove(cb)
+        d = Deferred()
+        self.triggers[pattern].append(d)
+        return d
 
     def send_command(self, command, pattern, timeout=None, expect_prompt=False):
         """
@@ -155,8 +145,7 @@ class ATProtocol(LineReceiver):
         #       returned without any command from the application, the
         #       registered handlers need to handle their own errors anyway
         #       and so I'm favouring that for consistency.
-        d = self.handle_unsolicited_responses(unsolicited_responses)
-        d.addErrback(log.err)
+        self.handle_unsolicited_responses(unsolicited_responses)
 
         d = {
             'command': command,
@@ -166,18 +155,23 @@ class ATProtocol(LineReceiver):
         return d
 
     def handle_unsolicited_responses(self, unsolicited_responses):
-        deferreds = []
-        for pattern, handlers in self.unsolicited_result_callbacks.items():
-            matches = filter(pattern.match, unsolicited_responses)
-            if matches:
-                for handler in handlers:
-                    deferreds.append(maybeDeferred(handler, matches))
-                for match in matches:
-                    unsolicited_responses.remove(match)
-        if unsolicited_responses:
+        cloned_responses = unsolicited_responses[:]
+        matched_patterns = []
+        for response in unsolicited_responses:
+            for pattern in self.triggers:
+                if re.match(pattern, response):
+                    matched_patterns.append(pattern)
+                    deferreds = self.triggers[pattern]
+                    for deferred in deferreds:
+                        deferred.callback(response)
+                    cloned_responses.remove(response)
+
+        for pattern in matched_patterns:
+            self.triggers.pop(pattern)
+
+        if cloned_responses:
             self.log('Unhandled unsolicited responses: %r.' % (
-                unsolicited_responses))
-        return DeferredList(deferreds)
+                cloned_responses))
 
     def parse_raw_data_received(self, pattern, raw_buffer):
         return_results = []
@@ -247,8 +241,12 @@ class TxGSMProtocol(ATProtocol):
         return d
 
     def dial_ussd_code(self, code):
-        return self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
-                                 pattern=re.compile('+CUSD'))
+        d1 = self.trigger(r'\+CUSD')
+
+        d2 = self.send_command('AT+CUSD=1,"%s",15' % (quote(code),),
+                               pattern=None)
+        d2.addCallback(lambda *a: d1)
+        return d2
 
     def list_received_messages(self, status=4):
         d = self.start_raw_mode()
