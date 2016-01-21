@@ -17,7 +17,7 @@ class TxGSMBaseTestCase(TestCase):
 
     def reply(self, data, delimiter=None, modem=None):
         modem = modem or self.modem
-        dl = delimiter or modem.delimiter
+        dl = modem.delimiter if delimiter is None else delimiter
         modem.dataReceived(data + dl)
 
     def wait_for_next_commands(self, clear=True, modem=None, transport=None):
@@ -55,6 +55,19 @@ class TxGSMBaseTestCase(TestCase):
                                   transport=transport)
         for reply in output:
             self.reply(reply, modem=modem)
+
+    def assertSolicitedResponses(self, actual, expected):
+        for atcommand, expected_responses in expected.items():
+            matched_commands = filter(lambda r: r['command'] == atcommand,
+                                      actual)
+            if not matched_commands:
+                raise Exception('Expected %s not matched.' % (atcommand,))
+                
+            for response in matched_commands:
+                if response['command'] == atcommand:
+                    print response['solicited_responses']
+                    self.assertEqual(response['solicited_responses'],
+                                     expected_responses)
 
 
 # Shamelessly copyied from @Hodgestar's contribution to

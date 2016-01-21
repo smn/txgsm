@@ -22,9 +22,7 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         yield self.assertExchange(['AT+CMEE=1'], ['OK'])
         yield self.assertExchange(['AT+CSMS=1'], ['OK'])
         response = yield d
-        self.assertEqual(response, [
-            [], [], [], []
-        ])
+        self.assertEqual(response, [])
 
     @inlineCallbacks
     def test_send_sms(self):
@@ -152,17 +150,17 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
             self.assertTrue('+FOO' in err_log['message'][0])
 
     @inlineCallbacks
-    def test_probe(self):
+    def test_probe_protocol(self):
         d = self.modem.probe()
         yield self.assertExchange(['ATE0'], ['OK'])
         yield self.assertExchange(['AT+CIMI'], ['01234123412341234', 'OK'])
         yield self.assertExchange(['AT+CGMM'], ['Foo Bar Corp', 'OK'])
         response = yield d
-        self.assertEqual(response, [
-            [],
-            ['01234123412341234'],
-            ['Foo Bar Corp'],
-        ])
+        self.assertSolicitedResponses(response, {
+            'ATE0': [],
+            'AT+CIMI': ['01234123412341234'],
+            'AT+CGMM': ['Foo Bar Corp'],
+        })
 
 
 class TxGSMServiceTestCase(TestCase):

@@ -9,6 +9,8 @@ from mock import Mock
 
 class TxGSMServiceTestCase(TxGSMBaseTestCase):
 
+    timeout = 1
+
     def setUp(self):
         super(TxGSMServiceTestCase, self).setUp()
         TxGSMService.serial_port_class = Mock()
