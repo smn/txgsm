@@ -257,7 +257,7 @@ class TxGSMProtocol(ATProtocol):
             pattern=re.compile(
                 r'^(\+CMGL\: .+\r\n[A-Z0-9]+\r\n)', re.MULTILINE)))
 
-        def parse_cmgl_response(response):
+        def parse_cmgl_response(responses):
             messages = []
             pattern = re.compile(
                 r'^\+CMGL\: '
@@ -267,10 +267,11 @@ class TxGSMProtocol(ATProtocol):
                 r'(?P<length>\d*)'
                 r'\r\n(?P<pdu>[A-Z0-9]+)')
 
-            for line in response:
-                match = pattern.match(line)
-                data = match.groupdict()
-                messages.append(SmsDeliver(data['pdu']))
+            for response in responses:
+                for line in response['solicited_responses']:
+                    match = pattern.match(line)
+                    data = match.groupdict()
+                    messages.append(SmsDeliver(data['pdu']))
 
             return messages
 

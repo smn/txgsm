@@ -22,7 +22,12 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         yield self.assertExchange(['AT+CMEE=1'], ['OK'])
         yield self.assertExchange(['AT+CSMS=1'], ['OK'])
         response = yield d
-        self.assertEqual(response, [])
+        self.assertSolicitedResponses(response, {
+            'ATE0': [],
+            'AT+CMGF=0': [],
+            'AT+CMEE=1': [],
+            'AT+CSMS=1': [],
+        })
 
     @inlineCallbacks
     def test_send_sms(self):
@@ -32,19 +37,11 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
         response = yield d
-        self.assertEqual(response, [
-            {
-                'command': ['AT+CMGS=23'],
-                'expect': '> ',
-                'response': ['> ']
-            },
-            {
-                'command': ['0001000B917267214365F700000B'
-                            'E8329BFD06DDDF723619\x1a'],
-                'expect': 'OK',
-                'response': ['OK']
-            }
-        ])
+        self.assertSolicitedResponses(response, {
+            'AT+CMGS=23': ['> '],
+            ('0001000B917267214365F700000B'
+             'E8329BFD06DDDF723619\x1a'): [],
+        })
 
     @inlineCallbacks
     def test_send_multipart_sms(self):
@@ -58,32 +55,19 @@ class TxGSMProtocolTestCase(TxGSMBaseTestCase):
         [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
         response = yield d
-        self.assertEqual(response, [
-            {
-                'command': ['AT+CMGS=153'],
-                'expect': '> ',
-                'response': ['> ']
-            }, {
-                'command': ['0041000B917267214365F70000A005000301020162B158'
-                            '2C168BC562B1582C168BC562B1582C168BC562B1582C16'
-                            '8BC562B1582C168BC562B1582C168BC562B1582C168BC5'
-                            '62B1582C168BC562B1582C168BC562B1582C168BC562B1'
-                            '582C168BC562B1582C168BC562B1582C168BC562B1582C'
-                            '168BC562B1582C168BC562B1582C168BC562B1582C168B'
-                            'C562B1582C168BC562B1582C168BC562\x1a'],
-                'expect': 'OK',
-                'response': ['OK']
-            }, {
-                'command': ['AT+CMGS=43'],
-                'expect': '> ',
-                'response': ['> ']
-            }, {
-                'command': ['0041000B917267214365F700002205000301020262B158'
-                            '2C168BC562B1582C168BC562B1582C168BC562B118\x1a'],
-                'expect': 'OK',
-                'response': ['OK']
-            }]
-        )
+        self.assertSolicitedResponses(response, {
+            'AT+CMGS=153': ['> '],
+            ('0041000B917267214365F70000A005000301020162B158'
+             '2C168BC562B1582C168BC562B1582C168BC562B1582C16'
+             '8BC562B1582C168BC562B1582C168BC562B1582C168BC5'
+             '62B1582C168BC562B1582C168BC562B1582C168BC562B1'
+             '582C168BC562B1582C168BC562B1582C168BC562B1582C'
+             '168BC562B1582C168BC562B1582C168BC562B1582C168B'
+             'C562B1582C168BC562B1582C168BC562\x1a'): [],
+            'AT+CMGS=43': ['> '],
+            ('0041000B917267214365F700002205000301020262B158'
+             '2C168BC562B1582C168BC562B1582C168BC562B118\x1a'): [],
+        })
 
     @inlineCallbacks
     def test_receive_sms(self):
