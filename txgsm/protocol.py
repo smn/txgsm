@@ -4,11 +4,9 @@ import re
 
 from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
-from twisted.internet.defer import (
-    Deferred, maybeDeferred, DeferredList, succeed)
+from twisted.internet.defer import Deferred, succeed
 from twisted.python import log
 
-from functools import partial
 from collections import defaultdict
 
 from .utils import quote
@@ -47,7 +45,8 @@ class ATProtocol(LineReceiver):
         self.triggers[pattern].append(d)
         return d
 
-    def send_command(self, command, pattern, timeout=None, expect_prompt=False):
+    def send_command(self, command, pattern,
+                     timeout=None, expect_prompt=False):
         """
         Send a command to the modem. This function returns a deferred that's
         fired when the response from the modem matches ``pattern``.

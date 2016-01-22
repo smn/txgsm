@@ -62,7 +62,7 @@ class TxGSMBaseTestCase(TestCase):
                                       actual)
             if not matched_commands:
                 raise Exception('Expected %s not matched.' % (atcommand,))
-                
+
             for response in matched_commands:
                 if response['command'] == atcommand:
                     print response['solicited_responses']
