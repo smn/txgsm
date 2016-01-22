@@ -156,9 +156,9 @@ class TxGSMServiceMaker(object):
     @inlineCallbacks
     def probe_modem(self, modem, options):
         result = yield modem.probe()
-        [_, imsi_result, manufacturer_result] = result
-        imsi, ok = imsi_result['response']
-        manufacturer, ok = manufacturer_result['response']
+        [ate0_result, cimi_result, cgmm_result] = result
+        imsi = cimi_result['solicited_responses'][0]
+        manufacturer = cgmm_result['solicited_responses'][0]
         log.msg('Manufacturer: %s' % (manufacturer,))
         log.msg('IMSI: %s' % (imsi,))
         self.shutdown()

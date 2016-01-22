@@ -1,8 +1,9 @@
 # -*- test-case-name: txgsm.tests.test_utils -*-
 
-from twisted.protocols.basic import LineReceiver
-
+import re
 from os import linesep
+
+from twisted.protocols.basic import LineReceiver
 
 
 def quote(s):
@@ -43,23 +44,22 @@ class USSDConsole(Console):
         return d
 
     def parse_ussd_response(self, resp):
-        for item in resp:
-            if not item.startswith('+CUSD'):
-                continue
-
-            ussd_resp = item.lstrip('+CUSD: ')
-            operation = ussd_resp[0]
-            content = ussd_resp[3:-4]
-            return int(operation), content
+        ussd_resp = resp.lstrip('+CUSD: ')
+        operation = ussd_resp[0]
+        content = ussd_resp[3:-4]
+        return int(operation), content
 
     def on_input(self, line):
-        d = self.modem.send_command('AT+CUSD=1,"%s",15' % (quote(line),),
-                                    expect="+CUSD")
-        d.addCallback(self.handle_response)
-        return d
+        d1 = self.modem.trigger(r'\+CUSD')
+        d1.addCallback(self.handle_response)
+
+        d2 = self.modem.send_command('AT+CUSD=1,"%s",15' % (quote(line),),
+                                    pattern=re.compile(r"\+CUSD"))
+        d2.addCallback(lambda *a: d1)
+        return d2
 
     def handle_response(self, result):
-        operation, content = self.parse_ussd_response(result['response'])
+        operation, content = self.parse_ussd_response(result)
         self.sendLine(content)
         if operation == self.FURTHER_ACTION:
             return self.prompt()

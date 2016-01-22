@@ -54,20 +54,12 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
         self.reply('> ', delimiter='')
         [pdu_payload] = yield self.wait_for_next_commands()
         self.reply('OK')
-        response = yield service.onProtocol
-        self.assertEqual(response, [
-            {
-                'command': ['AT+CMGS=23'],
-                'expect': '> ',
-                'response': ['> ']
-            },
-            {
-                'command': ['0001000B917267214365F700000B'
-                            'E8329BFD06DDDF723619\x1a'],
-                'expect': 'OK',
-                'response': ['OK']
-            }
-        ])
+        responses = yield service.onProtocol
+        self.assertSolicitedResponses(responses, {
+            'AT+CMGS=23': ['> '],
+            ('0001000B917267214365F700000B'
+             'E8329BFD06DDDF723619\x1a'): [],
+        })
 
     @inlineCallbacks
     def test_list_sms(self):
@@ -112,9 +104,8 @@ class TxGSMServiceTestCase(TxGSMBaseTestCase):
             ])
         standard_io = yield service.onProtocol
         standard_io.loseConnection()
-        [ussd_resp] = responses
-        self.assertEqual(ussd_resp['response'], [
-            'OK',
+        responses
+        self.assertEqual(responses, [
             ('+CUSD: 2,"Your balance is R48.70. Out of Airtime? '
              'Dial *111# for Airtime Advance. T&Cs apply.",255')
         ])
